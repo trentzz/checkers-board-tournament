@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "checkers-board-tournament"
+version = "0.1.0"
+description = ""
+authors = ["trentzz <z.trent.w@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+argparse = "^1.4.0"
+pytest = "^8.3.3"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+checkers = "checkers_board_tournament.main:main"

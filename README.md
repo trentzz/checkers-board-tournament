@@ -42,7 +42,7 @@ $ poetry run checkers RandomBot RandomBot FirstMover --mode all --rounds 1 --ver
 # Stuff and things
 
 Not an exhaustive list:
-- Default size set to and 8x8 board
+- Default size set to an 8x8 board
 - If you have the option of capturing a piece, you're forced to (the `move_list` will only contain captures if a capture is available)
 - Multiple jumps in one go is not currently supported, I'll do it sometime, but bot implementation shouldn't have to change at all to support it.
 - The colours of the pieces are "BLACK" and "WHITE" and white always goes first.
@@ -50,3 +50,5 @@ Not an exhaustive list:
 - The output consists of a folder with two files: `game_result_stats.txt` and `game_result_summary.txt` as well as all the games as `game_X.txt` if `--verbose` was used.
   - `game_result_stats.txt` is the win/loss of each bot
   - `game_result_summary.txt` is the summary of each game
+
+Finally feel free to open an issue if I did something dumb (very likely).

@@ -35,8 +35,9 @@ $ poetry run checkers RandomBot RandomBot FirstMover --mode all --rounds 1 --ver
 2. Make a new file in the `bots/` folder
 3. Make sure it inherits from `Bot` in `base_bot.py`. Have a look at other bots for clarification.
 4. Add your bot to `controller.py`. Again have a look at existing implementation for details. You can also search for `# BOT TODO`
-5. Run `poetry install`. See [Usage](#usage) for more details and options.
-6. Commit and open a PR to the `add-your-bot-here` branch (select your fork as the source, and this repo as the destination)
+5. Make sure the string you use in `Controller` and `get_name()` match
+6. Run `poetry install`. See [Usage](#usage) for more details and options.
+7. Commit and open a PR to the `add-your-bot-here` branch (select your fork as the source, and this repo as the destination)
 
 # Stuff and things
 

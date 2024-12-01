@@ -19,10 +19,31 @@ $ poetry run checkers -h
 ```bash
 $ poetry run checkers -h
 ```
+## Examples
+### Example 1
+Run 2 instances of `RandomBot` and 1 instance of `FirstBot` against each other.
+- Enable verbose output (which logs the actual moves for each game)
+- Set output directory for the run
+- Run one round
+```bash
+$ poetry run checkers RandomBot RandomBot FirstMover --mode all --rounds 1 --verbose --output-dir output
+```
 
 # Adding your own bot
 
 1. Make a new file in the `bots/` folder
-2. Make sure it inherits from `BaseBot`. Have a look at other bots for clarification.
-3. Add your bot to `main.py`. Again have a look at existing implementation for details.
-4. Run `poetry install`. See [Usage](#usage) for more details on how to run.
+2. Make sure it inherits from `Bot` in `base_bot.py`. Have a look at other bots for clarification.
+3. Add your bot to `controller.py`. Again have a look at existing implementation for details. You can also search for `# BOT TODO`
+4. Run `poetry install`. See [Usage](#usage) for more details and options.
+
+# Stuff and things
+
+Not an exhaustive list:
+- Default size set to and 8x8 board
+- If you have the option of capturing a piece, you're forced to (the `move_list` will only contain captures if a capture is available)
+- Multiple jumps in one go is not currently supported, I'll do it sometime, but bot implementation shouldn't have to change at all to support it.
+- The colours of the pieces are "BLACK" and "WHITE" and white always goes first.
+- Each round consists of 2 games where the bots swap being black and white.
+- The output consists of a folder with two files: `game_result_stats.txt` and `game_result_summary.txt` as well as all the games as `game_X.txt` if `--verbose` was used.
+  - `game_result_stats.txt` is the win/loss of each bot
+  - `game_result_summary.txt` is the summary of each game

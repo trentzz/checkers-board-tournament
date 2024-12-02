@@ -1,4 +1,4 @@
-# checkers-board-tournament
+# checkers-bot-tournament
 
 Uhh pretty much the title. Make bots that play checkers, play them against each other :)
 
@@ -9,7 +9,7 @@ Uhh pretty much the title. Make bots that play checkers, play them against each 
 - Poetry (Can be installed with `pipx install poetry`)
 
 ```bash
-$ cd checkers-board-tournament
+$ cd checkers-bot-tournament
 $ poetry install
 $ poetry run checkers -h
 ```
@@ -42,7 +42,7 @@ $ poetry run checkers RandomBot RandomBot FirstMover --mode all --rounds 1 --ver
 # Stuff and things
 
 Not an exhaustive list:
-- Default size set to an 8x8 board
+- Default size set to an 8x8 bot
 - If you have the option of capturing a piece, you're forced to (the `move_list` will only contain captures if a capture is available)
 - Multiple jumps in one go is not currently supported, I'll do it sometime, but bot implementation shouldn't have to change at all to support it.
 - The colours of the pieces are "BLACK" and "WHITE" and white always goes first.

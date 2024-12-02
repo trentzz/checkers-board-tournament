@@ -2,15 +2,15 @@ from datetime import datetime
 import os
 from typing import Optional, Dict
 from dataclasses import dataclass
-from checkers_board_tournament.game import Game
-from checkers_board_tournament.game_result import GameResult
-from checkers_board_tournament.board import Board
-from checkers_board_tournament.bots.base_bot import Bot
-from checkers_board_tournament.checkers_util import make_unique_bot_string
+from checkers_bot_tournament.game import Game
+from checkers_bot_tournament.game_result import GameResult
+from checkers_bot_tournament.board import Board
+from checkers_bot_tournament.bots.base_bot import Bot
+from checkers_bot_tournament.checkers_util import make_unique_bot_string
 
 # BOT TODO: Import your bot here!
-from checkers_board_tournament.bots.random_bot import RandomBot
-from checkers_board_tournament.bots.first_mover import FirstMover
+from checkers_bot_tournament.bots.random_bot import RandomBot
+from checkers_bot_tournament.bots.first_mover import FirstMover
 
 @dataclass
 class UniqueBot:

@@ -1,6 +1,6 @@
-from checkers_board_tournament.bots.base_bot import Bot
-from checkers_board_tournament.move import Move
-from checkers_board_tournament.board import Board
+from checkers_bot_tournament.bots.base_bot import Bot
+from checkers_bot_tournament.move import Move
+from checkers_bot_tournament.board import Board
 from random import randint
 
 

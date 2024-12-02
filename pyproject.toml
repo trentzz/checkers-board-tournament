@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "checkers-board-tournament"
+name = "checkers-bot-tournament"
 version = "0.1.0"
 description = ""
 authors = ["trentzz <z.trent.w@gmail.com>"]
@@ -16,4 +16,4 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-checkers = "checkers_board_tournament.main:main"
+checkers = "checkers_bot_tournament.main:main"

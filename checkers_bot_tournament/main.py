@@ -1,5 +1,5 @@
 import argparse
-from checkers_board_tournament.controller import Controller
+from checkers_bot_tournament.controller import Controller
 
 
 def main():

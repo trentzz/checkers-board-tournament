@@ -1,9 +1,9 @@
-from checkers_board_tournament.bots.base_bot import Bot
-from checkers_board_tournament.board import Board
-from checkers_board_tournament.game_result import GameResult
-from checkers_board_tournament.move import Move
-from checkers_board_tournament.piece import Piece
-from checkers_board_tournament.checkers_util import make_unique_bot_string
+from checkers_bot_tournament.bots.base_bot import Bot
+from checkers_bot_tournament.board import Board
+from checkers_bot_tournament.game_result import GameResult
+from checkers_bot_tournament.move import Move
+from checkers_bot_tournament.piece import Piece
+from checkers_bot_tournament.checkers_util import make_unique_bot_string
 from typing import Optional
 
 

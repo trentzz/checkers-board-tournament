@@ -1,5 +1,5 @@
-from checkers_board_tournament.board import Board
-from checkers_board_tournament.move import Move
+from checkers_bot_tournament.board import Board
+from checkers_bot_tournament.move import Move
 class Bot:
     def __init__(self, bot_id: int) -> None:
         self.bot_id = bot_id

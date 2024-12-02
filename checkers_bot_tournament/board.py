@@ -1,5 +1,5 @@
-from checkers_board_tournament.piece import Piece
-from checkers_board_tournament.move import Move
+from checkers_bot_tournament.piece import Piece
+from checkers_bot_tournament.move import Move
 from typing import Optional, Tuple
 
 

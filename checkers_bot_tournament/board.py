@@ -1,13 +1,18 @@
 from checkers_bot_tournament.piece import Piece
 from checkers_bot_tournament.move import Move
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 
 
 class Board:
     def __init__(self, size: int = 8):
         self.size = size  # Note that size must always be even
-        self.grid = [[None for _ in range(self.size)]
-                     for _ in range(self.size)]
+        if size % 2 != 0:
+            raise ValueError("Even board sizes only.")
+
+        self.grid: List[List[Optional[Piece]]] = [
+            [None for _ in range(self.size)]
+            for _ in range(self.size)
+        ]
         self.initialise_pieces()
 
     def initialise_pieces(self) -> None:
@@ -31,9 +36,15 @@ class Board:
                     self.grid[row][col] = Piece((row, col), "WHITE")
 
     def move_piece(self, move: Move) -> None:
+        """
+        Assume move is valid
+        (i.e. in bounds, piece exists, vacant destination for normal move, or valid capturing move)
+        """
         start_row, start_col = move.start
         end_row, end_col = move.end
         piece = self.grid[start_row][start_col]
+
+        assert(piece is not None)
 
         # Perform the move
         self.grid[start_row][start_col] = None
@@ -44,12 +55,15 @@ class Board:
         if move.removed:
             rem_row, rem_col = move.removed
             self.grid[rem_row][rem_col] = None
+            # TODO: increment capture counter
 
         # Promote to king
-        if (piece.colour == "WHITE" and end_row == 0) or (
-            piece.colour == "BLACK" and end_row == self.size - 1
+        if (not piece.is_king) and (
+            (piece.colour == "WHITE" and end_row == 0) or
+            (piece.colour == "BLACK" and end_row == self.size - 1)
         ):
             piece.is_king = True
+            # TODO: increment promotion counter
 
     def add_regular_move(self, moves: list[Move], row: int, col: int, dr: int, dc: int):
         end_row, end_col = row + dr, col + dc
@@ -61,9 +75,11 @@ class Board:
         capture_row, capture_col = row + 2 * dr, col + 2 * dc
         mid_row, mid_col = row + dr, col + dc
 
-        valid_capture_move = (self.is_within_bounds(capture_row, capture_col) and self.grid[capture_row][capture_col] is None
-                              and self.grid[mid_row][mid_col] is not None
-                              and self.grid[mid_row][mid_col].colour != colour)
+        mid_piece: Optional[Piece] = self.grid[mid_row][mid_col]
+        valid_capture_move = (self.is_within_bounds(capture_row, capture_col)
+                              and self.grid[capture_row][capture_col] is None
+                              and mid_piece is not None
+                              and mid_piece.colour != colour)
         
         if valid_capture_move:
             moves.append(
@@ -121,13 +137,16 @@ class Board:
 
     def display(self) -> str:
         # Looks disgusting but yay python
+
+        def get_cell_representation(cell):
+            if cell is None:
+                return "."
+            ch = "W" if cell.colour == "WHITE" else "B"
+            return ch.upper() if cell.is_king else ch.lower()
+
         return (
             "\n".join(
-                " ".join(
-                    "." if cell is None else (
-                        "W" if cell.colour == "WHITE" else "B")
-                    for cell in row
-                )
+                " ".join(get_cell_representation(cell) for cell in row)
                 for row in self.grid
             )
             + "\n"

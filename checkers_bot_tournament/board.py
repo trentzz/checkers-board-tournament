@@ -1,6 +1,6 @@
 from checkers_bot_tournament.piece import Piece
 from checkers_bot_tournament.move import Move
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple
 
 
 class Board:
@@ -9,7 +9,7 @@ class Board:
         if size % 2 != 0:
             raise ValueError("Even board sizes only.")
 
-        self.grid: List[List[Optional[Piece]]] = [
+        self.grid: list[list[Optional[Piece]]] = [
             [None for _ in range(self.size)]
             for _ in range(self.size)
         ]
@@ -110,12 +110,7 @@ class Board:
         # Funny rule in checkers, if there is a capture move available, you MUST
         # take it, so here, if there are any capture moves, we filter to only
         # allow captures moves.
-        capture_move_available = False
-        for move in moves:
-            if move.removed:
-                capture_move_available = True
-                break
-        
+        capture_move_available = any([move.removed for move in moves])
         if capture_move_available:
             capture_moves = list(filter(lambda move: move.removed is not None, moves))
             return capture_moves

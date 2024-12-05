@@ -45,7 +45,6 @@ class Board:
         start_row, start_col = move.start
         end_row, end_col = move.end
         piece = self.grid[start_row][start_col]
-
         assert(piece is not None)
 
         # Perform the move

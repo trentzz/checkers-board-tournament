@@ -80,6 +80,9 @@ class Game:
             winner_colour = "BLACK" if randint(1,2) == 1 else "WHITE"
             # TODO: You can add extra information here (and pass it into write_game_result)
             # and GameResult as needed
+
+            if self.verbose:
+                self.moves += "Automatic draw by 50-move rule! Winner decided by coin flip.\n"
             self.write_game_result(winner_colour)
             return None
 

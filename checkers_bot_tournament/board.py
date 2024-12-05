@@ -135,19 +135,29 @@ class Board:
             if 0 <= row < self.size and 0 <= col < self.size
             else None
         )
+        
+    def display_cell(self, cell: Optional[Piece]) -> str:
+        if not cell:
+            return "."
+        
+        match (cell.colour, cell.is_king):
+            case ("WHITE", False):
+                return "w"
+            case ("WHITE", True):
+                return "W"
+            case ("BLACK", False):
+                return "b"
+            case ("BLACK", True):
+                return "B"
 
     def display(self) -> str:
-        # Looks disgusting but yay python
-
-        def get_cell_representation(cell):
-            if cell is None:
-                return "."
-            ch = "W" if cell.colour == "WHITE" else "B"
-            return ch.upper() if cell.is_king else ch.lower()
-
+        # Looks disgusting but yay pythom
         return (
             "\n".join(
-                " ".join(get_cell_representation(cell) for cell in row)
+                " ".join(
+                    self.display_cell(cell)
+                    for cell in row
+                )
                 for row in self.grid
             )
             + "\n"

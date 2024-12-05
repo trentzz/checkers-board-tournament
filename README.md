@@ -56,10 +56,13 @@ TODO
 - `main` contains stable code
 - `add-your-bot-here` is effectively the development branch, PR into this branch
 
+I'll promote `add-your-bot-here` to `main` every once in a while (after testing)
+
 ### TODO
 
-- Elo system
-- Add ways to query move list after potential moves for bots
+- Elo system for ranking bots
+- Tournament mode
+- Benchmark all available bots and add rankings to readme periodically
 
 ## Checkers Rules
 

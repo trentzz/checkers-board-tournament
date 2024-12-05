@@ -79,6 +79,8 @@ class Controller:
         if bot.name in self.bot_mapping:
             bot_class = self.bot_mapping[bot.name]
             return bot_class(bot_id=bot.idx)
+        else:
+            raise ValueError("bot name not recognised!")
 
     def _run_all(self) -> None:
         """

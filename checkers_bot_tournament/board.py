@@ -35,10 +35,12 @@ class Board:
                 if (row + col) % 2 == 1:
                     self.grid[row][col] = Piece((row, col), "WHITE")
 
-    def move_piece(self, move: Move) -> None:
+    def move_piece(self, move: Move) -> bool:
         """
         Assume move is valid
         (i.e. in bounds, piece exists, vacant destination for normal move, or valid capturing move)
+
+        Returns True if capture or promotion occured, else False
         """
         start_row, start_col = move.start
         end_row, end_col = move.end
@@ -53,17 +55,21 @@ class Board:
 
         # Handle capture
         if move.removed:
+            # TODO: increment capture counter
             rem_row, rem_col = move.removed
             self.grid[rem_row][rem_col] = None
-            # TODO: increment capture counter
+            return True
 
         # Promote to king
         if (not piece.is_king) and (
             (piece.colour == "WHITE" and end_row == 0) or
             (piece.colour == "BLACK" and end_row == self.size - 1)
         ):
-            piece.is_king = True
             # TODO: increment promotion counter
+            piece.is_king = True
+            return True
+
+        return False
 
     def add_regular_move(self, moves: list[Move], row: int, col: int, dr: int, dc: int):
         end_row, end_col = row + dr, col + dc
@@ -73,11 +79,12 @@ class Board:
 
     def add_capture_move(self, moves: list[Move], colour: str, row: int, col: int, dr: int, dc: int):
         capture_row, capture_col = row + 2 * dr, col + 2 * dc
-        mid_row, mid_col = row + dr, col + dc
+        if not self.is_within_bounds(capture_row, capture_col):
+            return
 
+        mid_row, mid_col = row + dr, col + dc
         mid_piece: Optional[Piece] = self.grid[mid_row][mid_col]
-        valid_capture_move = (self.is_within_bounds(capture_row, capture_col)
-                              and self.grid[capture_row][capture_col] is None
+        valid_capture_move = (self.grid[capture_row][capture_col] is None
                               and mid_piece is not None
                               and mid_piece.colour != colour)
         

@@ -4,8 +4,11 @@ from checkers_bot_tournament.game_result import GameResult
 from checkers_bot_tournament.move import Move
 from checkers_bot_tournament.piece import Piece
 from checkers_bot_tournament.checkers_util import make_unique_bot_string
-from typing import Optional
 
+from typing import Optional
+from random import randint
+
+AUTO_DRAW_MOVECOUNT = 50 * 2
 
 class Game:
     def __init__(
@@ -28,8 +31,12 @@ class Game:
         self.move_number = 1
         self.is_first_move = True
 
-        self.game_result = None
-        self.moves = "" if verbose else None
+        # There must be a capture or promotion within last 50 moves
+        # of both players, or 100 by our count.
+        self.last_action_move = 0
+
+        self.game_result: Optional[GameResult] = None
+        self.moves = "" # if verbose else None
 
     def make_move(self) -> Optional[Move]:
         bot = self.white if self.current_turn == "WHITE" else self.black
@@ -57,12 +64,24 @@ class Game:
                 f"bot: {bot_string} has played an invalid move")
 
         move = move_list[move_idx]
-        self.board.move_piece(move)
+        if self.board.move_piece(move):
+            # Reset action move, since capture or promotion occured
+            self.last_action_move = self.move_number
 
         if self.verbose:
             self.moves += f"Move {self.move_number}: {self.current_turn}'s turn\n"
             self.moves += f"Moved from {str(move.start)} to {str(move.end)}\n"
             self.moves += self.board.display() + "\n"
+
+        if self.move_number - self.last_action_move >= AUTO_DRAW_MOVECOUNT:
+            # Since there is no draw outcome for now, flip a coin
+            # TODO: add draw outcome
+
+            winner_colour = "BLACK" if randint(1,2) == 1 else "WHITE"
+            # TODO: You can add extra information here (and pass it into write_game_result)
+            # and GameResult as needed
+            self.write_game_result(winner_colour)
+            return None
 
         self.move_number += 1
 
@@ -91,6 +110,7 @@ class Game:
                                       0, 0, loser_name, loser_colour, 0, 0, self.move_number, self.moves)
 
     def get_game_result(self) -> GameResult:
+        assert(self.game_result is not None)
         return self.game_result
 
     def swap_turn(self) -> None:

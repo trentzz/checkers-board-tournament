@@ -5,7 +5,7 @@ from checkers_bot_tournament.move import Move
 from checkers_bot_tournament.piece import Piece
 from checkers_bot_tournament.checkers_util import make_unique_bot_string
 from typing import Optional
-
+import copy
 
 class Game:
     def __init__(
@@ -50,7 +50,7 @@ class Game:
         #         return future.result(timeout=10)
         #     except TimeoutError:
         #         !!!
-        move_idx = bot.play_move(self.board, self.current_turn, move_list)
+        move_idx = bot.play_move(copy.deepcopy(self.board), self.current_turn, copy.copy(move_list))
         if move_idx < 0 or move_idx >= len(move_list):
             bot_string = make_unique_bot_string(bot.bot_id, bot.get_name())
             raise RuntimeError(

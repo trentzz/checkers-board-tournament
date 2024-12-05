@@ -82,7 +82,7 @@ class Game:
             # and GameResult as needed
 
             if self.verbose:
-                self.moves += "Automatic draw by 50-move rule! Winner decided by coin flip.\n"
+                self.moves += f"Automatic draw by {AUTO_DRAW_MOVECOUNT/2}-move rule! Winner decided by coin flip.\n"
             self.write_game_result(winner_colour)
             return None
 

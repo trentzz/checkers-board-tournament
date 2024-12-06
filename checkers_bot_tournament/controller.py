@@ -1,6 +1,6 @@
 from datetime import datetime
 import os
-from typing import Optional, Dict
+from typing import Optional, Dict, Type
 from dataclasses import dataclass
 from checkers_bot_tournament.game import Game
 from checkers_bot_tournament.game_result import GameResult
@@ -25,10 +25,14 @@ class GameResultStat:
     black_losses: int
 
 class Controller:
-    def __init__(self, mode: str, bot: Optional[str], bot_list: Optional[list[str]], size: int, rounds: int, verbose: bool, output_dir: str):
+    def __init__(self, mode: str, bot: Optional[str], bot_list: list[str], size: int, rounds: int, verbose: bool, output_dir: str):
         self.mode = mode
         self.bot = bot
+
+        # NOTE: From design perspective, I think it's better to verify bots at this point
+        # using the bot mapping, then keeping a list of bot classes.
         self.bot_list = bot_list
+        # NOTE: size currently not used
         self.size = size
         self.rounds = rounds
         self.verbose = verbose
@@ -37,30 +41,30 @@ class Controller:
         # Inits for non-params
         self.game_results: list[GameResult] = []
         self.game_id_counter: int = 0
-        self.game_results_folder: str = None
+        # self.game_results_folder: Optional[str] = None
         
         # BOT TODO: Add your bot mapping here!
-        self.bot_mapping: Dict[str, Bot] = {
+        self.bot_mapping: Dict[str, Type[Bot]] = {
             "RandomBot": RandomBot,
             "FirstMover": FirstMover
         }
         
-    def run(self):
-        self.create_timestamped_folder()
+    def run(self) -> None:
+        self._create_timestamped_folder()
         match self.mode:
             case "all":
                 assert self.bot is None, "--player should not be set if running on all mode"
-                self.run_all()
+                self._run_all()
             case "one":
                 assert self.bot, "--player must be set in one mode"
-                self.run_one()
+                self._run_one(self.bot)
             case _:
-                raise RuntimeError("mode value not recognised!")
+                raise ValueError("mode value not recognised!")
             
-        self.write_game_results()
+        self._write_game_results()
         
         
-    def create_timestamped_folder(self, prefix: str = "checkers_game_results"):
+    def _create_timestamped_folder(self, prefix: str = "checkers_game_results") -> None:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
         folder_name = f"{prefix}_{timestamp}"
@@ -71,11 +75,14 @@ class Controller:
         
         self.game_results_folder = folder_path
             
-    def return_bot_class(self, bot: UniqueBot) -> Bot:
+    def _return_bot_class(self, bot: UniqueBot) -> Bot:
         if bot.name in self.bot_mapping:
-            return self.bot_mapping[bot.name](bot.idx)
+            bot_class = self.bot_mapping[bot.name]
+            return bot_class(bot_id=bot.idx)
+        else:
+            raise ValueError("bot name not recognised!")
 
-    def run_all(self):
+    def _run_all(self) -> None:
         """
         Runs all bots against each other
         """
@@ -84,35 +91,35 @@ class Controller:
                 if idx == idy:
                     continue
 
-                self.run_games(UniqueBot(idx, bot), UniqueBot(idy, other))
+                self._run_games(UniqueBot(idx, bot), UniqueBot(idy, other))
     
-    def run_one(self):
+    def _run_one(self, bot: str) -> None:
         """
         Runs the one bot against all bots in the bot list
         """
         for idy, other in enumerate(self.bot_list):
             # Special case: we set the bot id to -1 since the list starts at 0
             # kinda hacky but uh :D
-            self.run_games(UniqueBot(-1, self.bot), UniqueBot(idy, other))
+            self._run_games(UniqueBot(-1, bot), UniqueBot(idy, other))
     
-    def run_game(self, white: UniqueBot, black: UniqueBot, game_id: int, game_round: int):
-        white_bot = self.return_bot_class(white)
-        black_bot = self.return_bot_class(black)
+    def _run_game(self, white: UniqueBot, black: UniqueBot, game_id: int, game_round: int) -> None:
+        white_bot = self._return_bot_class(white)
+        black_bot = self._return_bot_class(black)
         
         game = Game(white_bot, black_bot, Board(), game_id, game_round, self.verbose)
         game.run()
         self.game_results.append(game.get_game_result())
         
-    def get_new_game_id(self):
+    def _get_new_game_id(self) -> int:
         self.game_id_counter += 1
         return self.game_id_counter
     
-    def run_games(self, bot: UniqueBot, other: UniqueBot):
+    def _run_games(self, bot: UniqueBot, other: UniqueBot) -> None:
         for r in range(1, self.rounds + 1):
-            self.run_game(bot, other, self.get_new_game_id(), r)
-            self.run_game(other, bot, self.get_new_game_id(), r)
+            self._run_game(bot, other, self._get_new_game_id(), r)
+            self._run_game(other, bot, self._get_new_game_id(), r)
             
-    def write_game_result_summary(self, file, game: GameResult) -> None:
+    def _write_game_result_summary(self, file, game: GameResult) -> None:
         # TODO: Format this better
         file.write(f"Game ID: {game.game_id}\n")
         file.write(f"Game Round: {game.game_round}\n")
@@ -135,7 +142,7 @@ class Controller:
         file.write(f"Total Moves: {game.num_moves}\n")
         file.write("=" * 40 + "\n\n")
         
-    def write_game_result_stats(self, file, game_stats: Dict[str, GameResultStat]):
+    def _write_game_result_stats(self, file, game_stats: Dict[str, GameResultStat]) -> None:
         # TODO: Format this better
         file.write("Game Statistics\n")
         file.write("=" * 40 + "\n")
@@ -150,15 +157,15 @@ class Controller:
         
         file.write("=" * 40 + "\n\n")
     
-    def write_game_results(self):
+    def _write_game_results(self) -> None:
         game_result_summary_path = os.path.join(self.game_results_folder, "game_result_summary.txt")
         with open(game_result_summary_path, "w", encoding="utf-8") as file:
             for game in self.game_results:
-                self.write_game_result_summary(file, game)
+                self._write_game_result_summary(file, game)
                 if game.moves:
                     game_result_moves_path = os.path.join(self.game_results_folder, f"game_{game.game_id}.txt")
                     with open(game_result_moves_path, "w", encoding="utf-8") as moves_file:
-                        self.write_game_result_summary(moves_file, game)
+                        self._write_game_result_summary(moves_file, game)
                         moves_file.write("Moves: \n")
                         moves_file.write(game.moves)
                 
@@ -184,4 +191,4 @@ class Controller:
                 game_result_map[game.loser_name].black_losses += 1
             
         with open(game_result_stats_path, "w", encoding="utf-8") as file:
-            self.write_game_result_stats(file, game_result_map)
+            self._write_game_result_stats(file, game_result_map)

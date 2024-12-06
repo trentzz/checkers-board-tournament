@@ -11,6 +11,7 @@ from checkers_bot_tournament.checkers_util import make_unique_bot_string
 # BOT TODO: Import your bot here!
 from checkers_bot_tournament.bots.random_bot import RandomBot
 from checkers_bot_tournament.bots.first_mover import FirstMover
+from checkers_bot_tournament.bots.copycat import CopyCat
 
 @dataclass
 class UniqueBot:
@@ -46,7 +47,8 @@ class Controller:
         # BOT TODO: Add your bot mapping here!
         self.bot_mapping: Dict[str, Type[Bot]] = {
             "RandomBot": RandomBot,
-            "FirstMover": FirstMover
+            "FirstMover": FirstMover,
+            "CopyCat": CopyCat
         }
         
     def run(self) -> None:

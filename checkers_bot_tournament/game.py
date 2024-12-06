@@ -2,7 +2,7 @@ from checkers_bot_tournament.bots.base_bot import Bot
 from checkers_bot_tournament.board import Board
 from checkers_bot_tournament.game_result import GameResult
 from checkers_bot_tournament.move import Move
-from checkers_bot_tournament.piece import Piece
+from checkers_bot_tournament.piece import Piece, Colour
 from checkers_bot_tournament.checkers_util import make_unique_bot_string
 from checkers_bot_tournament.game_result import Result
 
@@ -28,7 +28,7 @@ class Game:
         self.game_round = game_round
         self.verbose = verbose
 
-        self.current_turn = "WHITE"
+        self.current_turn = Colour.WHITE
         self.move_number = 1
         self.is_first_move = True
 
@@ -45,11 +45,11 @@ class Game:
         self.moves = "" # if verbose else None
 
     def make_move(self) -> Tuple[Optional[Move], bool]:
-        bot = self.white if self.current_turn == "WHITE" else self.black
+        bot = self.white if self.current_turn == Colour.WHITE else self.black
         move_list: list[Move] = self.board.get_move_list(self.current_turn)
 
         if len(move_list) == 0:
-            result = Result.BLACK if self.current_turn == "WHITE" else Result.WHITE
+            result = Result.BLACK if self.current_turn == Colour.WHITE else Result.WHITE
             # TODO: You can add extra information here (and pass it into write_game_result)
             # and GameResult as needed
             self.write_game_result(result)
@@ -82,7 +82,7 @@ class Game:
         if self.verbose:
             self.moves += f"Move {self.move_number}: {self.current_turn}'s turn\n"
             self.moves += f"Moved from {str(move.start)} to {str(move.end)}\n"
-            self.moves += self.board.display() + "\n"
+            self.moves += "\n" + self.board.display()
 
         if self.move_number - self.last_action_move >= AUTO_DRAW_MOVECOUNT:
             result = Result.DRAW
@@ -99,13 +99,13 @@ class Game:
         return move, False
 
     def _record_capture(self) -> None:
-        if self.current_turn == "WHITE":
+        if self.current_turn == Colour.WHITE:
             self.white_num_captures += 1
         else:
             self.black_num_captures += 1
 
     def _record_promotion(self) -> None:
-        if self.current_turn == "WHITE":
+        if self.current_turn == Colour.WHITE:
             self.white_kings_made += 1
         else:
             self.black_kings_made += 1
@@ -135,9 +135,9 @@ class Game:
         return self.game_result
 
     def swap_turn(self) -> None:
-        if self.current_turn == "WHITE":
-            self.current_turn = "BLACK"
+        if self.current_turn == Colour.WHITE:
+            self.current_turn = Colour.BLACK
         else:
-            self.current_turn = "WHITE"
+            self.current_turn = Colour.WHITE
 
         self.is_first_move = True

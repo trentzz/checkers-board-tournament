@@ -12,6 +12,7 @@ from checkers_bot_tournament.checkers_util import make_unique_bot_string
 from checkers_bot_tournament.bots.random_bot import RandomBot
 from checkers_bot_tournament.bots.first_mover import FirstMover
 from checkers_bot_tournament.bots.Flexibility3Ply import Flexibility3Ply
+from checkers_bot_tournament.bots.Material3Ply import Material3Ply
 
 @dataclass
 class UniqueBot:
@@ -52,6 +53,7 @@ class Controller:
             "RandomBot": RandomBot,
             "FirstMover": FirstMover,
             "Flexibility3PlyBot": Flexibility3Ply,
+            "Material3PlyBot": Material3Ply,
         }
         
     def run(self) -> None:
@@ -93,7 +95,7 @@ class Controller:
         """
         for idx, bot in enumerate(self.bot_list):
             for idy, other in enumerate(self.bot_list):
-                if idx == idy:
+                if idx >= idy:
                     continue
 
                 self._run_games(UniqueBot(idx, bot), UniqueBot(idy, other))

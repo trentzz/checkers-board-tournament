@@ -4,10 +4,10 @@ from checkers_bot_tournament.game_result import GameResult
 from checkers_bot_tournament.move import Move
 from checkers_bot_tournament.piece import Piece
 from checkers_bot_tournament.checkers_util import make_unique_bot_string
+from checkers_bot_tournament.game_result import Result
 
 import copy
-from random import randint
-from typing import Optional
+from typing import Optional, Literal, Tuple
 
 AUTO_DRAW_MOVECOUNT = 50 * 2
 
@@ -36,19 +36,24 @@ class Game:
         # of both players, or 100 by our count.
         self.last_action_move = 0
 
+        self.white_kings_made = 0
+        self.white_num_captures = 0
+        self.black_kings_made = 0
+        self.black_num_captures = 0
+
         self.game_result: Optional[GameResult] = None
         self.moves = "" # if verbose else None
 
-    def make_move(self) -> Optional[Move]:
+    def make_move(self) -> Tuple[Optional[Move], bool]:
         bot = self.white if self.current_turn == "WHITE" else self.black
         move_list: list[Move] = self.board.get_move_list(self.current_turn)
 
         if len(move_list) == 0:
-            winner_colour = "BLACK" if self.current_turn == "WHITE" else "WHITE"
+            result = Result.BLACK if self.current_turn == "WHITE" else Result.WHITE
             # TODO: You can add extra information here (and pass it into write_game_result)
             # and GameResult as needed
-            self.write_game_result(winner_colour)
-            return None
+            self.write_game_result(result)
+            return (None, True)
 
         # TODO: Add a futures thingo to limit each bot to 10 seconds per move or smth
         # from concurrent.futures import ThreadPoolExecutor
@@ -65,9 +70,14 @@ class Game:
                 f"bot: {bot_string} has played an invalid move")
 
         move = move_list[move_idx]
-        if self.board.move_piece(move):
+        capture, promotion = self.board.move_piece(move)
+        if capture or promotion:
             # Reset action move, since capture or promotion occured
             self.last_action_move = self.move_number
+            if capture:
+                self._record_capture()
+            if promotion:
+                self._record_promotion()
 
         if self.verbose:
             self.moves += f"Move {self.move_number}: {self.current_turn}'s turn\n"
@@ -75,43 +85,50 @@ class Game:
             self.moves += self.board.display() + "\n"
 
         if self.move_number - self.last_action_move >= AUTO_DRAW_MOVECOUNT:
-            # Since there is no draw outcome for now, flip a coin
-            # TODO: add draw outcome
-
-            winner_colour = "BLACK" if randint(1,2) == 1 else "WHITE"
+            result = Result.DRAW
             # TODO: You can add extra information here (and pass it into write_game_result)
             # and GameResult as needed
 
             if self.verbose:
-                self.moves += f"Automatic draw by {AUTO_DRAW_MOVECOUNT/2}-move rule! Winner decided by coin flip.\n"
-            self.write_game_result(winner_colour)
-            return None
+                self.moves += f"Automatic draw by {AUTO_DRAW_MOVECOUNT/2}-move rule!\n"
+            self.write_game_result(result)
+            return move, True
 
         self.move_number += 1
 
-        return move
+        return move, False
+
+    def _record_capture(self) -> None:
+        if self.current_turn == "WHITE":
+            self.white_num_captures += 1
+        else:
+            self.black_num_captures += 1
+
+    def _record_promotion(self) -> None:
+        if self.current_turn == "WHITE":
+            self.white_kings_made += 1
+        else:
+            self.black_kings_made += 1
 
     def run(self) -> None:
         while True:
             # TODO: Implement chain moves (use is_first_move)
-            move = self.make_move()
-            if move is None:
+            move, stop = self.make_move()
+            if move is None or stop:
                 break
 
             self.swap_turn()
 
-    def write_game_result(self, winner_colour: str) -> None:
-        names = {
-            "WHITE": make_unique_bot_string(self.white.bot_id, self.white.get_name()),
-            "BLACK": make_unique_bot_string(self.black.bot_id, self.black.get_name())
-        }
-
-        winner_name = names[winner_colour]
-        loser_colour = "BLACK" if winner_colour == "WHITE" else "WHITE"
-        loser_name = names[loser_colour]
-
-        self.game_result = GameResult(self.game_id, self.game_round, winner_name, winner_colour,
-                                      0, 0, loser_name, loser_colour, 0, 0, self.move_number, self.moves)
+    def write_game_result(self, result: Result) -> None:
+        self.game_result = GameResult(game_id=self.game_id, game_round=self.game_round,
+                                      result=result,
+                                      white_name=make_unique_bot_string(self.white),
+                                      white_kings_made=self.white_kings_made,
+                                      white_num_captures=self.white_num_captures,
+                                      black_name=make_unique_bot_string(self.black),
+                                      black_kings_made=self.black_kings_made,
+                                      black_num_captures=self.black_num_captures,
+                                      num_moves=self.move_number, moves=self.moves)
 
     def get_game_result(self) -> GameResult:
         assert(self.game_result is not None)

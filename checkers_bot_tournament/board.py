@@ -1,7 +1,7 @@
-from checkers_bot_tournament.piece import Piece
 from checkers_bot_tournament.move import Move
-from typing import Optional, Tuple
+from checkers_bot_tournament.piece import Piece
 
+from typing import Optional, Tuple
 
 class Board:
     def __init__(self, size: int = 8):
@@ -35,7 +35,7 @@ class Board:
                 if (row + col) % 2 == 1:
                     self.grid[row][col] = Piece((row, col), "WHITE")
 
-    def move_piece(self, move: Move) -> bool:
+    def move_piece(self, move: Move) -> Tuple[bool, bool]:
         """
         Assume move is valid
         (i.e. in bounds, piece exists, vacant destination for normal move, or valid capturing move)
@@ -52,23 +52,23 @@ class Board:
         self.grid[end_row][end_col] = piece
         piece.position = move.end
 
-        # Handle capture
+        capture = False
+        promotion = False
+
         if move.removed:
-            # TODO: increment capture counter
             rem_row, rem_col = move.removed
             self.grid[rem_row][rem_col] = None
-            return True
+            capture = True
 
         # Promote to king
         if (not piece.is_king) and (
             (piece.colour == "WHITE" and end_row == 0) or
             (piece.colour == "BLACK" and end_row == self.size - 1)
         ):
-            # TODO: increment promotion counter
             piece.is_king = True
-            return True
+            promotion = True
 
-        return False
+        return (capture, promotion)
 
     def add_regular_move(self, moves: list[Move], row: int, col: int, dr: int, dc: int):
         end_row, end_col = row + dr, col + dc
@@ -149,6 +149,8 @@ class Board:
                 return "b"
             case ("BLACK", True):
                 return "B"
+            case _:
+                raise ValueError("Unexpected piece state encountered.")
 
     def display(self) -> str:
         # Looks disgusting but yay pythom

@@ -1,6 +1,8 @@
 from checkers_bot_tournament.board import Board
 from checkers_bot_tournament.move import Move
-class Bot:
+from abc import ABC
+
+class Bot(ABC):
     def __init__(self, bot_id: int) -> None:
         self.bot_id = bot_id
     

@@ -17,7 +17,7 @@ class Material3Ply(Bot):
     Maximise the length of my move_list after my opponent's best move
     """
     def play_move(self, board: Board, colour: Colour, move_list: list[Move]) -> int:
-        print(f"Ply {self.ply if colour == Colour.WHITE else self.ply + 1} as {colour}")
+        # print(f"Ply {self.ply if colour == Colour.WHITE else self.ply + 1} as {colour}")
         opp_colour = Colour.BLACK if colour == Colour.WHITE else Colour.WHITE
         
         scores1: list[tuple[int, int]] = []
@@ -48,7 +48,7 @@ class Material3Ply(Bot):
         # Now as ourselves, we want to maximise our score assuming our opp
         # wants to do us as much harm as they can (albeit from by our metrics)
         max_index1, max_score1 = max(scores1, key=lambda x: x[1])
-        print(f"{scores1=}")
+        # print(f"{scores1=}")
 
         self.ply += 2
         return max_index1
@@ -56,31 +56,25 @@ class Material3Ply(Bot):
     def score_board(self, board: Board, colour_to_move: Colour) -> int:
         # Determine the letter representing the opponent's pieces
         opp_colour = Colour.BLACK if colour_to_move == Colour.WHITE else Colour.WHITE
-        print(colour_to_move, opp_colour)
 
         # Calculate the material count for the player's pieces
         material_score = 0
         for i in board.grid:
             for j in i:
                 if j:
-                    if self.ply == 1:
-                        print (j.colour, j.is_king, material_score)
-                        print(j.colour == colour_to_move, j.colour == opp_colour)
-                    match (j.colour, j.is_king):
-                        case (opp_colour, True):
-                            material_score -= 5
-                        case (opp_colour, False):
-                            material_score -= 2
-                        case (colour_to_move, True):
+                    if j.colour is colour_to_move:
+                        if j.is_king:
                             material_score += 4
-                        case (colour_to_move, False):
+                        else:
                             material_score += 2
-                        case _:
-                            assert False
+                    elif j.colour is opp_colour:
+                        if j.is_king:
+                            material_score -= 5
+                        else:
+                            material_score -= 2
 
         # Return the difference in material count
-        print(material_score)
-        return -material_score
+        return material_score
 
     def get_name(self) -> str:
         return "Material3PlyBot"

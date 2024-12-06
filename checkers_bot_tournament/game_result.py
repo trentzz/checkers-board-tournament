@@ -42,7 +42,7 @@ class GameResult:
         string = inspect.cleandoc(f"""
         Game ID: {self.game_id}
         Game Round: {self.game_round}
-        Winner: {self.winner_name}
+        Winner: {self.winner_name if self.winner_name else 'Drawn Game'}
         Total Moves: {self.num_moves}
 
         {player1_stats}

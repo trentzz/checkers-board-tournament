@@ -5,7 +5,7 @@ from checkers_bot_tournament.move import Move
 
 import copy
 
-class FlexibilityOpp(Bot):
+class ScaredyCat(Bot):
     """
     Maximise the length of my opponent's move list (unless I can win)
     """
@@ -30,4 +30,4 @@ class FlexibilityOpp(Bot):
         return max_index1
 
     def get_name(self) -> str:
-        return "FlexibilityOppBot"
+        return "ScaredyCat"

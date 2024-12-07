@@ -13,6 +13,9 @@ class Board:
             [None for _ in range(self.size)]
             for _ in range(self.size)
         ]
+        
+        self.move_history: list[Move] = []
+        
         self.initialise_pieces()
 
     def initialise_pieces(self) -> None:
@@ -51,6 +54,9 @@ class Board:
         self.grid[start_row][start_col] = None
         self.grid[end_row][end_col] = piece
         piece.position = move.end
+        
+        # Add move to move_history
+        self.move_history.append(move)
 
         capture = False
         promotion = False
@@ -135,6 +141,9 @@ class Board:
             if 0 <= row < self.size and 0 <= col < self.size
             else None
         )
+        
+    def get_move_history(self) -> list[Move]:
+        return self.move_history
         
     def display_cell(self, cell: Optional[Piece], x: int, y: int) -> str:
         if not cell:

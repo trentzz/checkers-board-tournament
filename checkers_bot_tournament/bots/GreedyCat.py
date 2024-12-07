@@ -5,7 +5,7 @@ from checkers_bot_tournament.move import Move
 
 import copy
 
-class Material3Ply(Bot):
+class GreedyCat(Bot):
     def __init__(self, bot_id: int) -> None:
         super().__init__(bot_id)
         self.ply = 1
@@ -109,4 +109,4 @@ class Material3Ply(Bot):
         return material_score
 
     def get_name(self) -> str:
-        return "Material3PlyBot"
+        return "GreedyCat"

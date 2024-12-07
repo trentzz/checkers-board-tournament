@@ -96,6 +96,7 @@ Not an exhaustive list:
 
 |  Username   |  Bots   |
 | --- | --- |
-|  trentzz   |   RandomBot, FirstMover  |
+|  trentzz   |   RandomBot, FirstMover, CopyCat  |
+|  donren-leung | ScaredyCat, GreedyCat |
 
 Finally feel free to open an issue if I did something dumb (very likely).

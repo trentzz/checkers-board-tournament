@@ -11,6 +11,9 @@ from checkers_bot_tournament.checkers_util import make_unique_bot_string
 # BOT TODO: Import your bot here!
 from checkers_bot_tournament.bots.random_bot import RandomBot
 from checkers_bot_tournament.bots.first_mover import FirstMover
+from checkers_bot_tournament.bots.scaredycat import ScaredyCat
+from checkers_bot_tournament.bots.greedycat import GreedyCat
+from checkers_bot_tournament.bots.copycat import CopyCat
 
 @dataclass
 class UniqueBot:
@@ -49,7 +52,10 @@ class Controller:
         # BOT TODO: Add your bot mapping here!
         self.bot_mapping: Dict[str, Type[Bot]] = {
             "RandomBot": RandomBot,
-            "FirstMover": FirstMover
+            "FirstMover": FirstMover,
+            "ScaredyCat": ScaredyCat,
+            "GreedyCat": GreedyCat,
+            "CopyCat": CopyCat,
         }
         
     def run(self) -> None:
@@ -62,7 +68,7 @@ class Controller:
                 assert self.bot, "--player must be set in one mode"
                 self._run_one(self.bot)
             case _:
-                raise ValueError("mode value not recognised!")
+                raise ValueError(f"mode value {self.mode} not recognised!")
             
         self._write_game_results()
         
@@ -83,7 +89,7 @@ class Controller:
             bot_class = self.bot_mapping[bot.name]
             return bot_class(bot_id=bot.idx)
         else:
-            raise ValueError("bot name not recognised!")
+            raise ValueError(f"bot name {bot.name} entered in CLI not recognised!")
 
     def _run_all(self) -> None:
         """
@@ -91,7 +97,7 @@ class Controller:
         """
         for idx, bot in enumerate(self.bot_list):
             for idy, other in enumerate(self.bot_list):
-                if idx == idy:
+                if idx >= idy:
                     continue
 
                 self._run_games(UniqueBot(idx, bot), UniqueBot(idy, other))

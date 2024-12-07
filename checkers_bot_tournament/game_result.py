@@ -28,16 +28,17 @@ class GameResult:
     moves: Optional[str]
     
     def result_summary(self) -> str:
-        if self.result == Result.DRAW:
-            # Arbitrarily White is player 1
-            player1_stats = self.white_summary("White Player Details:")
-            player2_stats = self.black_summary("Black Player Details:")
-        elif self.result == Result.WHITE:
-            player1_stats = self.white_summary("Winner Details:")
-            player2_stats = self.black_summary("Loser Details:")
-        else:
-            player1_stats = self.black_summary("Winner Details:")
-            player2_stats = self.white_summary("Loser Details:")
+        match self.result:
+            case Result.DRAW:
+                # Arbitrarily White is player 1
+                player1_stats = self.white_summary("White Player Details:")
+                player2_stats = self.black_summary("Black Player Details:")
+            case Result.WHITE:
+                player1_stats = self.white_summary("Winner Details:")
+                player2_stats = self.black_summary("Loser Details:")
+            case Result.BLACK:
+                player1_stats = self.black_summary("Winner Details:")
+                player2_stats = self.white_summary("Loser Details:")
 
         string = inspect.cleandoc(f"""
         Game ID: {self.game_id}

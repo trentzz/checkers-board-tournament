@@ -76,6 +76,10 @@ Available development scripts are:
 - `poetry run poe fix` - Fix the code
 - `poetry run poe test` - Runs the tests with coverage report
 
+You can run the following command to automatically apply `format` and `check` before each commit and push:
+
+- `poetry run pre-commit install` - Installs pre-commit hooks
+
 ### VSCode
 
 For VSCode users, the following extensions are recommended:

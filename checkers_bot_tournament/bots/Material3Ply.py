@@ -10,8 +10,8 @@ class Material3Ply(Bot):
         super().__init__(bot_id)
         self.ply = 1
 
-        self.man_value = 2
-        self.king_value = 5
+        self.man_value = 1
+        self.king_value = 4
 
     """
     Maximise the length of my move_list after my opponent's best move
@@ -36,10 +36,10 @@ class Material3Ply(Bot):
                 searchboard2.move_piece(move2) # Opp's candidate move, now our turn
 
                 # Score by number of moves WE can make
-                s2 = self.score_board(searchboard2, colour)
+                s2 = self.do_scoring(searchboard2, colour)
                 scores2.append((i2, s2,))
             
-            print(f"{scores2=}")
+            # print(f"{scores2=}")
             # As opp, one would want to minimise our score. Save the i1th move
             # that would achieve this
             min_index2, min_score2 = min(scores2, key=lambda x: x[1])
@@ -53,25 +53,57 @@ class Material3Ply(Bot):
         self.ply += 2
         return max_index1
 
-    def score_board(self, board: Board, colour_to_move: Colour) -> int:
+
+    def do_scoring(self, board: Board, our_colour: Colour) -> int:
+        def evaluate_at_point_of_no_captures(board: Board, colour_to_move: Colour) -> int:
+            move_list = board.get_move_list(colour_to_move)
+            if len(move_list) == 0:
+                if our_colour == colour_to_move:
+                    return -999
+                else:
+                    return 999
+
+            # Check if we have to capture
+            scores: list[tuple[int, int]] = []
+            if move_list[0].removed:
+                for i, move in enumerate(move_list):
+                    search_board = copy.deepcopy(board)
+                    search_board.move_piece(move)
+                    score = evaluate_at_point_of_no_captures(search_board, colour_to_move.get_opposite())
+                    scores.append((i, score,))
+                if our_colour == colour_to_move:
+                    # we just made a range of moves; the scores are opponent's eval
+                    # so we wanna take the max score
+                    best_index, best_score = max(scores, key=lambda x: x[1])
+                else:
+                    # opp just made a range of moves; the scores are our eval
+                    # they would wanna take the min score
+                    best_index, best_score = min(scores, key=lambda x: x[1])
+                return best_score
+            else:
+                if our_colour == colour_to_move:
+                    return len(board.get_move_list(colour_to_move))
+                else:
+                    return len(board.get_move_list(colour_to_move))
+
         # Determine the letter representing the opponent's pieces
-        opp_colour = Colour.BLACK if colour_to_move == Colour.WHITE else Colour.WHITE
+        opp_colour = our_colour.get_opposite()
 
         # Calculate the material count for the player's pieces
         material_score = 0
         for i in board.grid:
             for j in i:
                 if j:
-                    if j.colour is colour_to_move:
+                    if j.colour is our_colour:
                         if j.is_king:
-                            material_score += 4
+                            self.king_value += self.king_value_value
                         else:
-                            material_score += 2
+                            material_score += self.man_value
                     elif j.colour is opp_colour:
                         if j.is_king:
-                            material_score -= 5
+                            self.king_value -= self.king_value_value
                         else:
-                            material_score -= 2
+                            material_score -= self.man_value
 
         # Return the difference in material count
         return material_score

@@ -62,8 +62,8 @@ class Board:
 
         # Promote to king
         if (not piece.is_king) and (
-            (piece.colour == "WHITE" and end_row == 0) or
-            (piece.colour == "BLACK" and end_row == self.size - 1)
+            (piece.colour == Colour.WHITE and end_row == 0) or
+            (piece.colour == Colour.BLACK and end_row == self.size - 1)
         ):
             piece.is_king = True
             promotion = True

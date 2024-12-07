@@ -11,7 +11,7 @@ from checkers_bot_tournament.checkers_util import make_unique_bot_string
 # BOT TODO: Import your bot here!
 from checkers_bot_tournament.bots.random_bot import RandomBot
 from checkers_bot_tournament.bots.first_mover import FirstMover
-from checkers_bot_tournament.bots.Flexibility3Ply import Flexibility3Ply
+from checkers_bot_tournament.bots.FlexibilityOpp import FlexibilityOpp
 from checkers_bot_tournament.bots.Material3Ply import Material3Ply
 
 @dataclass
@@ -52,7 +52,7 @@ class Controller:
         self.bot_mapping: Dict[str, Type[Bot]] = {
             "RandomBot": RandomBot,
             "FirstMover": FirstMover,
-            "Flexibility3PlyBot": Flexibility3Ply,
+            "FlexibilityOppBot": FlexibilityOpp,
             "Material3PlyBot": Material3Ply,
         }
         
@@ -66,7 +66,7 @@ class Controller:
                 assert self.bot, "--player must be set in one mode"
                 self._run_one(self.bot)
             case _:
-                raise ValueError("mode value not recognised!")
+                raise ValueError(f"mode value {self.mode} not recognised!")
             
         self._write_game_results()
         
@@ -87,7 +87,7 @@ class Controller:
             bot_class = self.bot_mapping[bot.name]
             return bot_class(bot_id=bot.idx)
         else:
-            raise ValueError("bot name not recognised!")
+            raise ValueError(f"bot name {bot.name} entered in CLI not recognised!")
 
     def _run_all(self) -> None:
         """

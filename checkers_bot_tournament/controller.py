@@ -1,9 +1,9 @@
 from datetime import datetime
 import os
-from typing import Optional, Dict, Type
+from typing import Optional, Dict, Type, IO
 from dataclasses import dataclass
 from checkers_bot_tournament.game import Game
-from checkers_bot_tournament.game_result import GameResult
+from checkers_bot_tournament.game_result import Result, GameResult
 from checkers_bot_tournament.board import Board
 from checkers_bot_tournament.bots.base_bot import Bot
 from checkers_bot_tournament.checkers_util import make_unique_bot_string
@@ -11,6 +11,8 @@ from checkers_bot_tournament.checkers_util import make_unique_bot_string
 # BOT TODO: Import your bot here!
 from checkers_bot_tournament.bots.random_bot import RandomBot
 from checkers_bot_tournament.bots.first_mover import FirstMover
+from checkers_bot_tournament.bots.scaredycat import ScaredyCat
+from checkers_bot_tournament.bots.greedycat import GreedyCat
 from checkers_bot_tournament.bots.copycat import CopyCat
 
 @dataclass
@@ -20,10 +22,13 @@ class UniqueBot:
     
 @dataclass
 class GameResultStat:
-    white_wins: int
-    white_losses: int
-    black_wins: int
-    black_losses: int
+    white_wins: int = 0
+    white_draws: int = 0
+    white_losses: int = 0
+
+    black_wins: int = 0
+    black_draws: int = 0
+    black_losses: int = 0
 
 class Controller:
     def __init__(self, mode: str, bot: Optional[str], bot_list: list[str], size: int, rounds: int, verbose: bool, output_dir: str):
@@ -48,7 +53,9 @@ class Controller:
         self.bot_mapping: Dict[str, Type[Bot]] = {
             "RandomBot": RandomBot,
             "FirstMover": FirstMover,
-            "CopyCat": CopyCat
+            "ScaredyCat": ScaredyCat,
+            "GreedyCat": GreedyCat,
+            "CopyCat": CopyCat,
         }
         
     def run(self) -> None:
@@ -61,7 +68,7 @@ class Controller:
                 assert self.bot, "--player must be set in one mode"
                 self._run_one(self.bot)
             case _:
-                raise ValueError("mode value not recognised!")
+                raise ValueError(f"mode value {self.mode} not recognised!")
             
         self._write_game_results()
         
@@ -82,7 +89,7 @@ class Controller:
             bot_class = self.bot_mapping[bot.name]
             return bot_class(bot_id=bot.idx)
         else:
-            raise ValueError("bot name not recognised!")
+            raise ValueError(f"bot name {bot.name} entered in CLI not recognised!")
 
     def _run_all(self) -> None:
         """
@@ -90,7 +97,7 @@ class Controller:
         """
         for idx, bot in enumerate(self.bot_list):
             for idy, other in enumerate(self.bot_list):
-                if idx == idy:
+                if idx >= idy:
                     continue
 
                 self._run_games(UniqueBot(idx, bot), UniqueBot(idy, other))
@@ -121,43 +128,81 @@ class Controller:
             self._run_game(bot, other, self._get_new_game_id(), r)
             self._run_game(other, bot, self._get_new_game_id(), r)
             
-    def _write_game_result_summary(self, file, game: GameResult) -> None:
-        # TODO: Format this better
-        file.write(f"Game ID: {game.game_id}\n")
-        file.write(f"Game Round: {game.game_round}\n")
-        file.write("\n")
+    def _write_game_result_summary(self, file: IO, game: GameResult) -> None:
+        file.write(game.result_summary())
+        file.write("\n" + "=" * 40 + "\n")
         
-        file.write("Winner Details:\n")
-        file.write(f"  Name: {game.winner_name}\n")
-        file.write(f"  Colour: {game.winner_colour}\n")
-        file.write(f"  Kings Made: {game.winner_kings_made}\n")
-        file.write(f"  Number of Captures: {game.winner_num_captures}\n")
-        file.write("\n")
+    def _write_game_result_stats(self, file: IO, game_stats: Dict[str, GameResultStat]) -> None:
+        """
+        Writes game result statistics to a file in a structured and readable format.
         
-        file.write("Loser Details:\n")
-        file.write(f"  Name: {game.loser_name}\n")
-        file.write(f"  Colour: {game.loser_colour}\n")
-        file.write(f"  Kings Made: {game.loser_kings_made}\n")
-        file.write(f"  Number of Captures: {game.loser_num_captures}\n")
-        file.write("\n")
+        The format includes a header row followed by counts and percentages for
+        White, Black, and Overall statistics for each bot.
+
+        Shamelessly crafted with ChatGPT :)
         
-        file.write(f"Total Moves: {game.num_moves}\n")
-        file.write("=" * 40 + "\n\n")
-        
-    def _write_game_result_stats(self, file, game_stats: Dict[str, GameResultStat]) -> None:
-        # TODO: Format this better
+        Args:
+            file: The file object to write the statistics to.
+            game_stats (Dict[str, GameResultStat]): A dictionary mapping bot names to their game statistics.
+        """
         file.write("Game Statistics\n")
-        file.write("=" * 40 + "\n")
-        
+        file.write("=" * 60 + "\n\n")
+
         for bot_name, stats in game_stats.items():
             file.write(f"Bot Name: {bot_name}\n")
-            file.write(f"  White Wins: {stats.white_wins}\n")
-            file.write(f"  White Losses: {stats.white_losses}\n")
-            file.write(f"  Black Wins: {stats.black_wins}\n")
-            file.write(f"  Black Losses: {stats.black_losses}\n")
-            file.write("-" * 40 + "\n")
-        
-        file.write("=" * 40 + "\n\n")
+            file.write("-" * 60 + "\n")
+
+            label_width = 10  # For "White", "Black", "Overall"
+            col_width = 8     # For "Win", "Draw", "Loss" columns
+
+            # Print the header row once per bot
+            header = f"{'Win':<{col_width}}{'Draw':<{col_width}}{'Loss':<{col_width}}"
+            file.write(f"{'':<{label_width}}{header}\n")
+
+            # Compute Overall stats
+            overall_wins = stats.white_wins + stats.black_wins
+            overall_draws = stats.white_draws + stats.black_draws
+            overall_losses = stats.white_losses + stats.black_losses
+
+            # Organize counts for White, Black, and Overall
+            counts = {
+                "White":   (stats.white_wins, stats.white_draws, stats.white_losses),
+                "Black":   (stats.black_wins, stats.black_draws, stats.black_losses),
+                "Overall": (overall_wins, overall_draws, overall_losses),
+            }
+
+            # Print absolute counts
+            for label, (w, d, l) in counts.items():
+                counts_str = f"{w:<{col_width}}{d:<{col_width}}{l:<{col_width}}"
+                file.write(f"{label:<{label_width}}{counts_str}\n")
+
+            # Calculate and print percentages
+            for label, (w, d, l) in counts.items():
+                total_games = w + d + l
+                if total_games > 0:
+                    win_pct = (w / total_games) * 100
+                    draw_pct = (d / total_games) * 100
+                    loss_pct = (l / total_games) * 100
+                    score_pct = ((w + 0.5 * d) / total_games) * 100
+                else:
+                    win_pct = draw_pct = loss_pct = score_pct = 0.0
+
+                # Format each percentage including the % sign within the column
+                win_str = f"{win_pct:.1f}%"
+                draw_str = f"{draw_pct:.1f}%"
+                loss_str = f"{loss_pct:.1f}%"
+                score_str = f"{score_pct:.2f}%"
+
+                pct_str = (
+                    f"{label:<{label_width}}"
+                    f"{win_str:<{col_width}}"
+                    f"{draw_str:<{col_width}}"
+                    f"{loss_str:<{col_width}}"
+                    f"= {score_str}"
+                )
+                file.write(pct_str + "\n")
+
+            file.write("=" * 60 + "\n\n")
     
     def _write_game_results(self) -> None:
         game_result_summary_path = os.path.join(self.game_results_folder, "game_result_summary.txt")
@@ -175,22 +220,21 @@ class Controller:
         
         game_result_map: Dict[str, GameResultStat] = {}
         if self.bot:
-            game_result_map[make_unique_bot_string(-1, self.bot)] = GameResultStat(0,0,0,0)
+            game_result_map[make_unique_bot_string(-1, self.bot)] = GameResultStat()
         for idx, name in enumerate(self.bot_list):
-            game_result_map[make_unique_bot_string(idx, name)] = GameResultStat(0,0,0,0)
+            game_result_map[make_unique_bot_string(idx, name)] = GameResultStat()
 
         for game in self.game_results:
             # Add winner
-            if game.winner_colour == "WHITE":
-                game_result_map[game.winner_name].white_wins += 1
+            if game.result == Result.WHITE:
+                game_result_map[game.white_name].white_wins += 1
+                game_result_map[game.black_name].black_losses += 1
+            elif game.result == Result.BLACK:
+                game_result_map[game.white_name].white_losses += 1
+                game_result_map[game.black_name].black_wins += 1
             else:
-                game_result_map[game.winner_name].black_wins += 1
-            
-            # Add loser
-            if game.loser_colour == "WHITE":
-                game_result_map[game.loser_name].white_losses += 1
-            else:
-                game_result_map[game.loser_name].black_losses += 1
+                game_result_map[game.white_name].white_draws += 1
+                game_result_map[game.black_name].black_draws += 1
             
         with open(game_result_stats_path, "w", encoding="utf-8") as file:
             self._write_game_result_stats(file, game_result_map)

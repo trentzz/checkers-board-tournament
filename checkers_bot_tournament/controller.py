@@ -11,8 +11,8 @@ from checkers_bot_tournament.checkers_util import make_unique_bot_string
 # BOT TODO: Import your bot here!
 from checkers_bot_tournament.bots.random_bot import RandomBot
 from checkers_bot_tournament.bots.first_mover import FirstMover
-from checkers_bot_tournament.bots.ScaredyCat import ScaredyCat
-from checkers_bot_tournament.bots.GreedyCat import GreedyCat
+from checkers_bot_tournament.bots.scaredycat import ScaredyCat
+from checkers_bot_tournament.bots.greedycat import GreedyCat
 from checkers_bot_tournament.bots.copycat import CopyCat
 
 @dataclass

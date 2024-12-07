@@ -66,11 +66,14 @@ def main():
     if args.mode == "tournament" and not args.bot_list:
         parser.error("--bot-list is required in tournament mode.")
 
+    if args.rounds < 1:
+        parser.error("rounds is required to be an integer >= 1")
+
     # Create the controller
     controller = Controller(
         mode=args.mode,
-        bot=args.bot,
-        bot_list=args.bot_list,
+        bot_name=args.bot,
+        bot_names=args.bot_list,
         size=args.size,
         rounds=args.rounds,
         verbose=args.verbose,

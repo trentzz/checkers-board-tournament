@@ -1,10 +1,11 @@
 from checkers_bot_tournament.bots.base_bot import Bot
+from checkers_bot_tournament.bots.bot_tracker import BotTracker
+
 from checkers_bot_tournament.board import Board
-from checkers_bot_tournament.game_result import GameResult
+from checkers_bot_tournament.game_result import GameResult, Result
 from checkers_bot_tournament.move import Move
 from checkers_bot_tournament.piece import Piece, Colour
 from checkers_bot_tournament.checkers_util import make_unique_bot_string
-from checkers_bot_tournament.game_result import Result
 
 import copy
 from typing import Optional, Literal, Tuple
@@ -14,8 +15,8 @@ AUTO_DRAW_MOVECOUNT = 50 * 2
 class Game:
     def __init__(
         self,
-        white: Bot,
-        black: Bot,
+        white: BotTracker,
+        black: BotTracker,
         board: Board,
         game_id: int,
         game_round: int,
@@ -45,7 +46,7 @@ class Game:
         self.moves = "" # if verbose else None
 
     def make_move(self) -> Tuple[Optional[Move], bool]:
-        bot = self.white if self.current_turn == Colour.WHITE else self.black
+        bot = self.white.bot if self.current_turn == Colour.WHITE else self.black.bot
         move_list: list[Move] = self.board.get_move_list(self.current_turn)
 
         if len(move_list) == 0:
@@ -123,9 +124,11 @@ class Game:
         self.game_result = GameResult(game_id=self.game_id, game_round=self.game_round,
                                       result=result,
                                       white_name=make_unique_bot_string(self.white),
+                                      white_rating=round(self.white.rating),
                                       white_kings_made=self.white_kings_made,
                                       white_num_captures=self.white_num_captures,
                                       black_name=make_unique_bot_string(self.black),
+                                      black_rating=round(self.black.rating),
                                       black_kings_made=self.black_kings_made,
                                       black_num_captures=self.black_num_captures,
                                       num_moves=self.move_number, moves=self.moves)
@@ -135,9 +138,6 @@ class Game:
         return self.game_result
 
     def swap_turn(self) -> None:
-        if self.current_turn == Colour.WHITE:
-            self.current_turn = Colour.BLACK
-        else:
-            self.current_turn = Colour.WHITE
+        self.current_turn = self.current_turn.get_opposite()
 
         self.is_first_move = True

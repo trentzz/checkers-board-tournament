@@ -16,10 +16,12 @@ class GameResult:
     result: Result
 
     white_name: str
+    white_rating: int
     white_kings_made: int
     white_num_captures: int
 
     black_name: str
+    black_rating: int
     black_kings_made: int
     black_num_captures: int
 
@@ -27,7 +29,7 @@ class GameResult:
     # This is quite chunky (it stores every move and board state) so it's optional
     moves: Optional[str]
     
-    def result_summary(self) -> str:
+    def __str__ (self) -> str:
         match self.result:
             case Result.DRAW:
                 # Arbitrarily White is player 1
@@ -54,7 +56,7 @@ class GameResult:
 
     def white_summary(self, header: str) -> str:
         string = (f"""{header}
-            Name: {self.white_name}
+            Name: {self.white_name} ({self.white_rating})
             Colour: White
             Kings Made: {self.white_kings_made}
             Number of Captures: {self.white_num_captures}""")
@@ -62,7 +64,7 @@ class GameResult:
     
     def black_summary(self, header: str) -> str:
         string = (f"""{header}
-            Name: {self.black_name}
+            Name: {self.black_name} ({self.black_rating})
             Colour: Black
             Kings Made: {self.black_kings_made}
             Number of Captures: {self.black_num_captures}""")

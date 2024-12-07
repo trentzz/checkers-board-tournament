@@ -1,6 +1,7 @@
 from typing import overload
 
 from checkers_bot_tournament.bots.base_bot import Bot
+from checkers_bot_tournament.bots.bot_tracker import BotTracker
 
 @overload
 def make_unique_bot_string(idx: int, bot: str) -> str:
@@ -8,6 +9,10 @@ def make_unique_bot_string(idx: int, bot: str) -> str:
 
 @overload
 def make_unique_bot_string(bot: Bot) -> str:
+    ...
+
+@overload
+def make_unique_bot_string(bot: BotTracker) -> str:
     ...
 
 def make_unique_bot_string(*args, **kwargs) -> str:
@@ -18,6 +23,9 @@ def make_unique_bot_string(*args, **kwargs) -> str:
     # Runtime implementation:
     if len(args) == 1 and isinstance(args[0], Bot):
         bot = args[0]
+        return f"[{bot.bot_id}] {bot.get_name()}"
+    elif len(args) == 1 and isinstance(args[0], BotTracker):
+        bot = args[0].bot
         return f"[{bot.bot_id}] {bot.get_name()}"
     elif len(args) == 2 and isinstance(args[0], int) and isinstance(args[1], str):
         idx, bot_str = args

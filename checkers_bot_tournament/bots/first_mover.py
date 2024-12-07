@@ -8,8 +8,9 @@ class FirstMover(Bot):
     """
     Just picks the first move :D
     """
+
     def play_move(self, board: Board, colour: Colour, move_list: list[Move]) -> int:
         return 0
-    
+
     def get_name(self) -> str:
         return "FirstMover"

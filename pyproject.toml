@@ -15,6 +15,7 @@ mypy = "^1.13.0"
 ruff = "^0.8.2"
 poethepoet = "^0.31.1"
 coverage = "^7.6.9"
+pre-commit = "^4.0.1"
 
 [build-system]
 requires = ["poetry-core"]
@@ -46,38 +47,3 @@ ignore_fail = 'return_non_zero'
 [[tool.poe.tasks.test]]
 sequence = ['_test_all', 'coverage_report']
 ignore_fail = 'return_non_zero'
-
-[tool.ruff]
-exclude = [
-    ".bzr",
-    ".direnv",
-    ".eggs",
-    ".git",
-    ".git-rewrite",
-    ".hg",
-    ".ipynb_checkpoints",
-    ".mypy_cache",
-    ".nox",
-    ".pants.d",
-    ".pyenv",
-    ".pytest_cache",
-    ".pytype",
-    ".ruff_cache",
-    ".svn",
-    ".tox",
-    ".venv",
-    ".vscode",
-    "__pypackages__",
-    "_build",
-    "buck-out",
-    "build",
-    "dist",
-    "node_modules",
-    "site-packages",
-    "venv",
-]
-
-[tool.ruff.lint]
-ignore = [ # Add ignore codes here
-    "E741",  # Ambiguous variable name (l can be 1)
-]

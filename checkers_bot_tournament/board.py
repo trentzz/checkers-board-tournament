@@ -1,7 +1,7 @@
-from checkers_bot_tournament.piece import Piece
 from checkers_bot_tournament.move import Move
-from typing import Optional, Tuple
+from checkers_bot_tournament.piece import Piece, Colour
 
+from typing import Optional, Tuple
 
 class Board:
     def __init__(self, size: int = 8):
@@ -13,6 +13,9 @@ class Board:
             [None for _ in range(self.size)]
             for _ in range(self.size)
         ]
+        
+        self.move_history: list[Move] = []
+        
         self.initialise_pieces()
 
     def initialise_pieces(self) -> None:
@@ -27,15 +30,15 @@ class Board:
         for row in range(half - 1):
             for col in range(self.size):
                 if (row + col) % 2 == 1:
-                    self.grid[row][col] = Piece((row, col), "BLACK")
+                    self.grid[row][col] = Piece((row, col), Colour.BLACK)
 
         # Init white pieces
         for row in range(half + 1, self.size):
             for col in range(self.size):
                 if (row + col) % 2 == 1:
-                    self.grid[row][col] = Piece((row, col), "WHITE")
+                    self.grid[row][col] = Piece((row, col), Colour.WHITE)
 
-    def move_piece(self, move: Move) -> bool:
+    def move_piece(self, move: Move) -> Tuple[bool, bool]:
         """
         Assume move is valid
         (i.e. in bounds, piece exists, vacant destination for normal move, or valid capturing move)
@@ -51,24 +54,27 @@ class Board:
         self.grid[start_row][start_col] = None
         self.grid[end_row][end_col] = piece
         piece.position = move.end
+        
+        # Add move to move_history
+        self.move_history.append(move)
 
-        # Handle capture
+        capture = False
+        promotion = False
+
         if move.removed:
-            # TODO: increment capture counter
             rem_row, rem_col = move.removed
             self.grid[rem_row][rem_col] = None
-            return True
+            capture = True
 
         # Promote to king
         if (not piece.is_king) and (
-            (piece.colour == "WHITE" and end_row == 0) or
-            (piece.colour == "BLACK" and end_row == self.size - 1)
+            (piece.colour == Colour.WHITE and end_row == 0) or
+            (piece.colour == Colour.BLACK and end_row == self.size - 1)
         ):
-            # TODO: increment promotion counter
             piece.is_king = True
-            return True
+            promotion = True
 
-        return False
+        return (capture, promotion)
 
     def add_regular_move(self, moves: list[Move], row: int, col: int, dr: int, dc: int):
         end_row, end_col = row + dr, col + dc
@@ -76,7 +82,7 @@ class Board:
                 and self.grid[end_row][end_col] is None):
             moves.append(Move((row, col), (end_row, end_col), None))
 
-    def add_capture_move(self, moves: list[Move], colour: str, row: int, col: int, dr: int, dc: int):
+    def add_capture_move(self, moves: list[Move], colour: Colour, row: int, col: int, dr: int, dc: int):
         capture_row, capture_col = row + 2 * dr, col + 2 * dc
         if not self.is_within_bounds(capture_row, capture_col):
             return
@@ -91,12 +97,12 @@ class Board:
             moves.append(
                 Move((row, col), (capture_row, capture_col), (mid_row, mid_col),))
 
-    def get_move_list(self, colour: str) -> list[Move]:
+    def get_move_list(self, colour: Colour) -> list[Move]:
         moves: list[Move] = []
 
         # Directions for normal pieces
         forward_directions = (
-            [(-1, -1), (-1, 1)] if colour == "WHITE" else [(1, -1), (1, 1)]
+            [(-1, -1), (-1, 1)] if colour == Colour.WHITE else [(1, -1), (1, 1)]
         )
         # Directions for kings (can move in all four diagonals)
         king_directions = forward_directions + [
@@ -136,29 +142,37 @@ class Board:
             else None
         )
         
-    def display_cell(self, cell: Optional[Piece]) -> str:
+    def get_move_history(self) -> list[Move]:
+        return self.move_history
+        
+    def display_cell(self, cell: Optional[Piece], x: int, y: int) -> str:
         if not cell:
-            return "."
+            if (x + y) % 2 == 0:
+                return " "
+            else:
+                return "."
         
         match (cell.colour, cell.is_king):
-            case ("WHITE", False):
+            case (Colour.WHITE, False):
                 return "w"
-            case ("WHITE", True):
+            case (Colour.WHITE, True):
                 return "W"
-            case ("BLACK", False):
+            case (Colour.BLACK, False):
                 return "b"
-            case ("BLACK", True):
+            case (Colour.BLACK, True):
                 return "B"
+            case _:
+                raise ValueError("Unexpected piece state encountered.")
 
     def display(self) -> str:
         # Looks disgusting but yay pythom
         return (
             "\n".join(
                 " ".join(
-                    self.display_cell(cell)
-                    for cell in row
+                    self.display_cell(cell, x, y)
+                    for x, cell in enumerate(row)
                 )
-                for row in self.grid
+                for y, row in enumerate(self.grid)
             )
             + "\n"
         )

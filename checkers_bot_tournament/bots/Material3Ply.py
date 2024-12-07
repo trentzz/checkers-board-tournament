@@ -96,12 +96,12 @@ class Material3Ply(Bot):
                 if j:
                     if j.colour is our_colour:
                         if j.is_king:
-                            self.king_value += self.king_value_value
+                            self.king_value += self.king_value
                         else:
                             material_score += self.man_value
                     elif j.colour is opp_colour:
                         if j.is_king:
-                            self.king_value -= self.king_value_value
+                            self.king_value -= self.king_value
                         else:
                             material_score -= self.man_value
 

@@ -3,7 +3,8 @@ from checkers_bot_tournament.controller import Controller
 
 
 def main():
-    parser = argparse.ArgumentParser(description="checkers-board-tournament cli")
+    parser = argparse.ArgumentParser(
+        description="checkers-board-tournament cli")
 
     # Mode (required)
     parser.add_argument(
@@ -12,6 +13,20 @@ def main():
         required=True,
         choices=["one", "all"],
         help="Mode of the game: 'one' for one bot against others, 'all' for all bots against each other."
+    )
+
+    parser.add_argument(
+        "--board-state",
+        type=str,
+        choices=["default", "last_row"],
+        default="default",
+        help="Initial board state (this can be used together with --pdn)"
+    )
+
+    parser.add_argument(
+        "--pdn",
+        type=str,
+        help="Initialise a game using a PDN"
     )
 
     parser.add_argument(
@@ -50,6 +65,12 @@ def main():
         help="Enable verbose output."
     )
 
+    parser.add_argument(
+        "--export-pdn",
+        action="store_true",
+        help="Export as pdn output."
+    )
+
     # Output directory
     parser.add_argument(
         "--output-dir",
@@ -69,11 +90,14 @@ def main():
     # Create the controller
     controller = Controller(
         mode=args.mode,
+        board_state=args.board_state,
+        pdn=args.pdn,
         bot=args.bot,
         bot_list=args.bot_list,
         size=args.size,
         rounds=args.rounds,
         verbose=args.verbose,
         output_dir=args.output_dir,
+        export_pdn=args.export_pdn
     )
     controller.run()

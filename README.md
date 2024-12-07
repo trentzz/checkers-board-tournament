@@ -71,9 +71,9 @@ Poetry is used to manage dependencies and [poethepoet](https://pypi.org/project/
 Available development scripts are:
 
 - `poetry run poe format` - Formats the code
-- `poetry run poe format_check` - Checks if the code is formatted
+- `poetry run poe format_check` - Checks if code is formatted
 - `poetry run poe check` - Perform a suite of static checks
-- `poetry run poe fix` - Fix the code
+- `poetry run poe fix` - Apply formatting and static checks fixes
 - `poetry run poe test` - Runs the tests with coverage report
 
 You can run the following command to automatically apply `format` and `check` before each commit and push:

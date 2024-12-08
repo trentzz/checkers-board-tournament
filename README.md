@@ -19,7 +19,50 @@ poetry run checkers -h
 
 ```bash
 poetry run checkers -h
+
+usage: checkers [-h] --mode {one,all} [--board-state {default,last_row}] [--pdn PDN]
+                [--bot BOT] [--size SIZE] [--rounds ROUNDS] [--verbose] [--export-pdn]
+                [--output-dir OUTPUT_DIR]
+                bot_list [bot_list ...]
+
+checkers-board-tournament cli
+
+positional arguments:
+  bot_list              List of bots
+
+options:
+  -h, --help            show this help message and exit
+  --mode {one,all}      Mode of the game: 'one' for one bot against others, 'all' for all
+                        bots against each other.
+  --board-state {default,last_row}
+                        Initial board state (this can be used together with --pdn)
+  --pdn PDN             Initialise a game using a PDN
+  --bot BOT             Name or path of the bot to use (required in 'one' mode).
+  --size SIZE           Size of the board (default: 8).
+  --rounds ROUNDS       Number of rounds to play (default: 1).
+  --verbose             Enable verbose output.
+  --export-pdn          Export as pdn output.
+  --output-dir OUTPUT_DIR
+                        Directory to save output files (default: .).
 ```
+
+### Options
+
+There are two ways to initialise a game, with `--board-state` options and a `--pdn` file (they can be used together).
+
+#### Portable Draughts Notation
+
+More information about PDN can be found here:
+
+<https://en.wikipedia.org/wiki/Portable_Draughts_Notation>
+
+To view the checkers games in a UI website:
+<https://playcheckers.io/analyze>
+
+#### Outputs
+
+`--verbose` outputs a formatted game with extra information.
+`--export-pdn` outputs a pdn file.
 
 ### Examples
 

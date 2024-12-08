@@ -1,42 +1,21 @@
-from checkers_bot_tournament.move import Move
-from checkers_bot_tournament.piece import Piece, Colour
-
 from typing import Optional, Tuple
 
+from checkers_bot_tournament.move import Move
+from checkers_bot_tournament.piece import Piece, Colour
+from checkers_bot_tournament.board_start_builder import BoardStartBuilder
+
+Grid = list[list[Optional[Piece]]]
+
+
 class Board:
-    def __init__(self, size: int = 8):
+    def __init__(self, board_start_builder: BoardStartBuilder, size: int = 8):
         self.size = size  # Note that size must always be even
         if size % 2 != 0:
             raise ValueError("Even board sizes only.")
 
-        self.grid: list[list[Optional[Piece]]] = [
-            [None for _ in range(self.size)]
-            for _ in range(self.size)
-        ]
-        
+        self.grid: Grid = board_start_builder.build()
+
         self.move_history: list[Move] = []
-        
-        self.initialise_pieces()
-
-    def initialise_pieces(self) -> None:
-        """
-        Initialises pieces on the board. The black pieces are from 0 to (half - 1)
-        and the white pieces are from (half - 1) to size. There will always be
-        a two row gap between the pieces to start with.
-        """
-
-        half = int(self.size / 2)
-        # Init black pieces
-        for row in range(half - 1):
-            for col in range(self.size):
-                if (row + col) % 2 == 1:
-                    self.grid[row][col] = Piece((row, col), Colour.BLACK)
-
-        # Init white pieces
-        for row in range(half + 1, self.size):
-            for col in range(self.size):
-                if (row + col) % 2 == 1:
-                    self.grid[row][col] = Piece((row, col), Colour.WHITE)
 
     def move_piece(self, move: Move) -> Tuple[bool, bool]:
         """
@@ -48,13 +27,13 @@ class Board:
         start_row, start_col = move.start
         end_row, end_col = move.end
         piece = self.grid[start_row][start_col]
-        assert(piece is not None)
+        assert (piece is not None)
 
         # Perform the move
         self.grid[start_row][start_col] = None
         self.grid[end_row][end_col] = piece
         piece.position = move.end
-        
+
         # Add move to move_history
         self.move_history.append(move)
 
@@ -92,10 +71,13 @@ class Board:
         valid_capture_move = (self.grid[capture_row][capture_col] is None
                               and mid_piece is not None
                               and mid_piece.colour != colour)
-        
+
         if valid_capture_move:
             moves.append(
                 Move((row, col), (capture_row, capture_col), (mid_row, mid_col),))
+
+    def is_valid_move(self, colour: Colour, move: Move) -> bool:
+        return move in self.get_move_list(colour)
 
     def get_move_list(self, colour: Colour) -> list[Move]:
         moves: list[Move] = []
@@ -113,20 +95,22 @@ class Board:
             for col in range(self.size):
                 piece = self.get_piece((row, col))
                 if piece and piece.colour == colour:
-                    directions = (king_directions if piece.is_king else forward_directions)
-                    
+                    directions = (
+                        king_directions if piece.is_king else forward_directions)
+
                     for dr, dc in directions:
                         self.add_regular_move(moves, row, col, dr, dc)
                         self.add_capture_move(moves, colour, row, col, dr, dc)
-        
+
         # Funny rule in checkers, if there is a capture move available, you MUST
         # take it, so here, if there are any capture moves, we filter to only
         # allow captures moves.
         capture_move_available = any([move.removed for move in moves])
         if capture_move_available:
-            capture_moves = list(filter(lambda move: move.removed is not None, moves))
+            capture_moves = list(
+                filter(lambda move: move.removed is not None, moves))
             return capture_moves
-        
+
         # If no capture moves available, return all moves
         return moves
 
@@ -141,17 +125,17 @@ class Board:
             if 0 <= row < self.size and 0 <= col < self.size
             else None
         )
-        
+
     def get_move_history(self) -> list[Move]:
         return self.move_history
-        
+
     def display_cell(self, cell: Optional[Piece], x: int, y: int) -> str:
         if not cell:
             if (x + y) % 2 == 0:
                 return " "
             else:
                 return "."
-        
+
         match (cell.colour, cell.is_king):
             case (Colour.WHITE, False):
                 return "w"

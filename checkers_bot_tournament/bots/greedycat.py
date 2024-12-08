@@ -5,7 +5,12 @@ from checkers_bot_tournament.move import Move
 
 import copy
 
+
 class GreedyCat(Bot):
+    """
+    Maximise my material after 3 layers of search
+    """
+
     def __init__(self, bot_id: int) -> None:
         super().__init__(bot_id)
         self.ply = 1
@@ -13,17 +18,14 @@ class GreedyCat(Bot):
         self.man_value = 1
         self.king_value = 4
 
-    """
-    Maximise the length of my move_list after my opponent's best move
-    """
     def play_move(self, board: Board, colour: Colour, move_list: list[Move]) -> int:
         # print(f"Ply {self.ply if colour == Colour.WHITE else self.ply + 1} as {colour}")
         opp_colour = Colour.BLACK if colour == Colour.WHITE else Colour.WHITE
-        
+
         scores1: list[tuple[int, int]] = []
         for i1, move1 in enumerate(move_list):
             searchboard = copy.deepcopy(board)
-            searchboard.move_piece(move1) # Our candidate move, now opp's turn
+            searchboard.move_piece(move1)  # Our candidate move, now opp's turn
             move_list_2 = searchboard.get_move_list(opp_colour)
 
             if len(move_list_2) == 0:
@@ -33,12 +35,13 @@ class GreedyCat(Bot):
             scores2: list[tuple[int, int]] = []
             for i2, move2 in enumerate(move_list_2):
                 searchboard2 = copy.deepcopy(searchboard)
-                searchboard2.move_piece(move2) # Opp's candidate move, now our turn
+                # Opp's candidate move, now our turn
+                searchboard2.move_piece(move2)
 
                 # Score by number of moves WE can make
                 s2 = self.do_scoring(searchboard2, colour)
                 scores2.append((i2, s2,))
-            
+
             # print(f"{scores2=}")
             # As opp, one would want to minimise our score. Save the i1th move
             # that would achieve this
@@ -52,7 +55,6 @@ class GreedyCat(Bot):
 
         self.ply += 2
         return max_index1
-
 
     def do_scoring(self, board: Board, our_colour: Colour) -> int:
         def evaluate_at_point_of_no_captures(board: Board, colour_to_move: Colour) -> int:
@@ -69,7 +71,8 @@ class GreedyCat(Bot):
                 for i, move in enumerate(move_list):
                     search_board = copy.deepcopy(board)
                     search_board.move_piece(move)
-                    score = evaluate_at_point_of_no_captures(search_board, colour_to_move.get_opposite())
+                    score = evaluate_at_point_of_no_captures(
+                        search_board, colour_to_move.get_opposite())
                     scores.append((i, score,))
                 if our_colour == colour_to_move:
                     # we just made a range of moves; the scores are opponent's eval

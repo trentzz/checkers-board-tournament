@@ -34,9 +34,7 @@ def main():
     parser.add_argument("bot_list", type=str, nargs="+", help="List of bots")
 
     # Board size
-    parser.add_argument(
-        "--size", type=int, default=8, help="Size of the board (default: 8)."
-    )
+    parser.add_argument("--size", type=int, default=8, help="Size of the board (default: 8).")
 
     # Number of rounds
     parser.add_argument(
@@ -46,9 +44,7 @@ def main():
     # Verbose flag
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output.")
 
-    parser.add_argument(
-        "--export-pdn", action="store_true", help="Export as pdn output."
-    )
+    parser.add_argument("--export-pdn", action="store_true", help="Export as pdn output.")
 
     # Output directory
     parser.add_argument(

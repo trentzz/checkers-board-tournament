@@ -40,23 +40,13 @@ class GreedyCat(Bot):
 
                 # Score by number of moves WE can make
                 s2 = self.do_scoring(searchboard2, colour)
-                scores2.append(
-                    (
-                        i2,
-                        s2,
-                    )
-                )
+                scores2.append((i2, s2))
 
             # print(f"{scores2=}")
             # As opp, one would want to minimise our score. Save the i1th move
             # that would achieve this
             min_index2, min_score2 = min(scores2, key=lambda x: x[1])
-            scores1.append(
-                (
-                    i1,
-                    min_score2,
-                )
-            )
+            scores1.append((i1, min_score2))
 
         # Now as ourselves, we want to maximise our score assuming our opp
         # wants to do us as much harm as they can (albeit from by our metrics)
@@ -67,9 +57,7 @@ class GreedyCat(Bot):
         return max_index1
 
     def do_scoring(self, board: Board, our_colour: Colour) -> int:
-        def evaluate_at_point_of_no_captures(
-            board: Board, colour_to_move: Colour
-        ) -> int:
+        def evaluate_at_point_of_no_captures(board: Board, colour_to_move: Colour) -> int:
             move_list = board.get_move_list(colour_to_move)
             if len(move_list) == 0:
                 if our_colour == colour_to_move:
@@ -86,12 +74,7 @@ class GreedyCat(Bot):
                     score = evaluate_at_point_of_no_captures(
                         search_board, colour_to_move.get_opposite()
                     )
-                    scores.append(
-                        (
-                            i,
-                            score,
-                        )
-                    )
+                    scores.append((i, score))
                 if our_colour == colour_to_move:
                     # we just made a range of moves; the scores are opponent's eval
                     # so we wanna take the max score

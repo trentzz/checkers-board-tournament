@@ -57,10 +57,7 @@ class Board:
 
     def add_regular_move(self, moves: list[Move], row: int, col: int, dr: int, dc: int):
         end_row, end_col = row + dr, col + dc
-        if (
-            self.is_within_bounds(end_row, end_col)
-            and self.grid[end_row][end_col] is None
-        ):
+        if self.is_within_bounds(end_row, end_col) and self.grid[end_row][end_col] is None:
             moves.append(Move((row, col), (end_row, end_col), None))
 
     def add_capture_move(
@@ -94,21 +91,15 @@ class Board:
         moves: list[Move] = []
 
         # Directions for normal pieces
-        forward_directions = (
-            [(-1, -1), (-1, 1)] if colour == Colour.WHITE else [(1, -1), (1, 1)]
-        )
+        forward_directions = [(-1, -1), (-1, 1)] if colour == Colour.WHITE else [(1, -1), (1, 1)]
         # Directions for kings (can move in all four diagonals)
-        king_directions = forward_directions + [
-            (-d[0], -d[1]) for d in forward_directions
-        ]
+        king_directions = forward_directions + [(-d[0], -d[1]) for d in forward_directions]
 
         for row in range(self.size):
             for col in range(self.size):
                 piece = self.get_piece((row, col))
                 if piece and piece.colour == colour:
-                    directions = (
-                        king_directions if piece.is_king else forward_directions
-                    )
+                    directions = king_directions if piece.is_king else forward_directions
 
                     for dr, dc in directions:
                         self.add_regular_move(moves, row, col, dr, dc)
@@ -131,11 +122,7 @@ class Board:
     def get_piece(self, position: Tuple[int, int]) -> Optional[Piece]:
         """Return the piece at a specific position."""
         row, col = position
-        return (
-            self.grid[row][col]
-            if 0 <= row < self.size and 0 <= col < self.size
-            else None
-        )
+        return self.grid[row][col] if 0 <= row < self.size and 0 <= col < self.size else None
 
     def get_move_history(self) -> list[Move]:
         return self.move_history

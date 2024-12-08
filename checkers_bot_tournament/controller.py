@@ -95,9 +95,7 @@ class Controller:
         self._create_timestamped_folder()
         match self.mode:
             case "all":
-                assert (
-                    self.bot is None
-                ), "--player should not be set if running on all mode"
+                assert self.bot is None, "--player should not be set if running on all mode"
                 self._run_all()
             case "one":
                 assert self.bot, "--player must be set in one mode"
@@ -109,12 +107,9 @@ class Controller:
 
     def _get_board_start_builder(self, board_start_builder: str) -> BoardStartBuilder:
         if board_start_builder not in Controller.board_start_builder_mapping:
-            raise ValueError(
-                f"board_state: {board_start_builder} not recognised!")
+            raise ValueError(f"board_state: {board_start_builder} not recognised!")
 
-        board_start_builder_class = Controller.board_start_builder_mapping[
-            board_start_builder
-        ]
+        board_start_builder_class = Controller.board_start_builder_mapping[board_start_builder]
         return board_start_builder_class(self.size)
 
     def _verify_bot_list(self, bot_list: list[str]) -> None:
@@ -124,9 +119,7 @@ class Controller:
                 unrecognised_bots.append(bot)
 
         if unrecognised_bots:
-            raise ValueError(
-                f"bots: {', '.join(unrecognised_bots)} entered in CLI not recognised!"
-            )
+            raise ValueError(f"bots: {', '.join(unrecognised_bots)} entered in CLI not recognised!")
 
     def _create_timestamped_folder(self, prefix: str = "checkers_game_results") -> None:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -166,24 +159,18 @@ class Controller:
             # kinda hacky but uh :D
             self._run_games(UniqueBot(-1, bot), UniqueBot(idy, other))
 
-    def _run_game(
-        self, white: UniqueBot, black: UniqueBot, game_id: int, game_round: int
-    ) -> None:
+    def _run_game(self, white: UniqueBot, black: UniqueBot, game_id: int, game_round: int) -> None:
         white_bot = self._return_bot_class(white)
         black_bot = self._return_bot_class(black)
 
         board = Board(self.board_start_builder)
 
-        game = Game(
-            white_bot, black_bot, board, game_id, game_round, self.verbose, self.pdn
-        )
+        game = Game(white_bot, black_bot, board, game_id, game_round, self.verbose, self.pdn)
         game.run()
         self.game_results.append(game.get_game_result())
 
         if self.export_pdn:
-            game_result_pdn_path = os.path.join(
-                self.game_results_folder, f"game_{game_id}.pdn"
-            )
+            game_result_pdn_path = os.path.join(self.game_results_folder, f"game_{game_id}.pdn")
             game.export_pdn(game_result_pdn_path)
 
     def _get_new_game_id(self) -> int:
@@ -199,9 +186,7 @@ class Controller:
         file.write(game.result_summary())
         file.write("\n" + "=" * 40 + "\n")
 
-    def _write_game_result_stats(
-        self, file: IO, game_stats: Dict[str, GameResultStat]
-    ) -> None:
+    def _write_game_result_stats(self, file: IO, game_stats: Dict[str, GameResultStat]) -> None:
         """
         Writes game result statistics to a file in a structured and readable format.
 
@@ -274,9 +259,7 @@ class Controller:
             file.write("=" * 60 + "\n\n")
 
     def _write_game_results(self) -> None:
-        game_result_summary_path = os.path.join(
-            self.game_results_folder, "game_result_summary.txt"
-        )
+        game_result_summary_path = os.path.join(self.game_results_folder, "game_result_summary.txt")
         with open(game_result_summary_path, "w", encoding="utf-8") as file:
             for game in self.game_results:
                 self._write_game_result_summary(file, game)
@@ -284,24 +267,18 @@ class Controller:
                     game_result_moves_path = os.path.join(
                         self.game_results_folder, f"game_{game.game_id}.txt"
                     )
-                    with open(
-                        game_result_moves_path, "w", encoding="utf-8"
-                    ) as moves_file:
+                    with open(game_result_moves_path, "w", encoding="utf-8") as moves_file:
                         self._write_game_result_summary(moves_file, game)
                         moves_file.write("Moves: \n")
                         moves_file.write(game.moves)
 
-        game_result_stats_path = os.path.join(
-            self.game_results_folder, "game_result_stats.txt"
-        )
+        game_result_stats_path = os.path.join(self.game_results_folder, "game_result_stats.txt")
 
         game_result_map: Dict[str, GameResultStat] = {}
         if self.bot:
-            game_result_map[make_unique_bot_string(
-                -1, self.bot)] = GameResultStat()
+            game_result_map[make_unique_bot_string(-1, self.bot)] = GameResultStat()
         for idx, name in enumerate(self.bot_list):
-            game_result_map[make_unique_bot_string(
-                idx, name)] = GameResultStat()
+            game_result_map[make_unique_bot_string(idx, name)] = GameResultStat()
 
         for game in self.game_results:
             # Add winner

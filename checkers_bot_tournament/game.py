@@ -68,9 +68,7 @@ class Game:
 
             start_pos = self._pdn_to_coordinates(start)
             end_pos = self._pdn_to_coordinates(end)
-            removed_pos = (
-                self._get_removed_position(start_pos, end_pos) if "x" in move else None
-            )
+            removed_pos = self._get_removed_position(start_pos, end_pos) if "x" in move else None
 
             move_obj = Move(start_pos, end_pos, removed_pos)
 
@@ -111,9 +109,7 @@ class Game:
         """Converts a PDN square number to a (row, col) coordinate."""
         square_num = int(pdn)
         row = (square_num - 1) // (self.board.size // 2)
-        col = ((square_num - 1) % (self.board.size // 2)) * 2 + (
-            1 if row % 2 == 0 else 0
-        )
+        col = ((square_num - 1) % (self.board.size // 2)) * 2 + (1 if row % 2 == 0 else 0)
 
         return row, col
 
@@ -152,9 +148,7 @@ class Game:
         #         return future.result(timeout=10)
         #     except TimeoutError:
         #         !!!
-        move_idx = bot.play_move(
-            copy.deepcopy(self.board), self.current_turn, copy.copy(move_list)
-        )
+        move_idx = bot.play_move(copy.deepcopy(self.board), self.current_turn, copy.copy(move_list))
         if move_idx < 0 or move_idx >= len(move_list):
             bot_string = make_unique_bot_string(bot.bot_id, bot.get_name())
             raise RuntimeError(f"bot: {bot_string} has played an invalid move")
@@ -170,9 +164,7 @@ class Game:
                 self._record_promotion()
 
         if self.verbose:
-            self.moves_string += (
-                f"Move {self.move_number}: {self.current_turn}'s turn\n"
-            )
+            self.moves_string += f"Move {self.move_number}: {self.current_turn}'s turn\n"
             self.moves_string += f"Moved from {str(move.start)} to {str(move.end)}\n"
             self.moves_string += "\n" + self.board.display()
 
@@ -182,9 +174,7 @@ class Game:
             # and GameResult as needed
 
             if self.verbose:
-                self.moves_string += (
-                    f"Automatic draw by {AUTO_DRAW_MOVECOUNT/2}-move rule!\n"
-                )
+                self.moves_string += f"Automatic draw by {AUTO_DRAW_MOVECOUNT/2}-move rule!\n"
             self.write_game_result(result)
             return move, True
 

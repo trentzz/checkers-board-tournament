@@ -1,4 +1,3 @@
-
 import pytest
 
 from checkers_bot_tournament.board import Board
@@ -27,8 +26,7 @@ def test_import_pdn_from_string(temp_pdn_file, sample_pdn):
     temp_pdn_file.write_text(sample_pdn)
 
     # Create a board and import the PDN
-    game = Game(Bot(0), Bot(0), Board(DefaultBSB()),
-                0, 0, False, temp_pdn_file)
+    game = Game(Bot(0), Bot(0), Board(DefaultBSB()), 0, 0, False, temp_pdn_file)
 
     # Expected move list (calculated manually)
     expected_moves = [

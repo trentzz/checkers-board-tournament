@@ -18,8 +18,4 @@ class Move:
     def __eq__(self, other) -> bool:
         if not isinstance(other, Move):
             return False
-        return (
-            self.start == other.start
-            and self.end == other.end
-            and self.removed == other.removed
-        )
+        return self.start == other.start and self.end == other.end and self.removed == other.removed

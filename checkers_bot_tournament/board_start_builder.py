@@ -1,13 +1,13 @@
 from abc import ABC
 from typing import Optional
 
-from checkers_bot_tournament.piece import Piece, Colour
+from checkers_bot_tournament.piece import Colour, Piece
 
 Grid = list[list[Optional[Piece]]]
 
 
 class BoardStartBuilder(ABC):
-    def __init__(self, size: int) -> None:
+    def __init__(self, size: int = 8) -> None:
         self.size = size
 
     def build(self) -> Grid:
@@ -16,10 +16,7 @@ class BoardStartBuilder(ABC):
 
 class DefaultBSB(BoardStartBuilder):
     def build(self) -> Grid:
-        grid: Grid = [
-            [None for _ in range(self.size)]
-            for _ in range(self.size)
-        ]
+        grid: Grid = [[None for _ in range(self.size)] for _ in range(self.size)]
 
         half = int(self.size / 2)
         # Init black pieces
@@ -39,10 +36,7 @@ class DefaultBSB(BoardStartBuilder):
 
 class LastRowBSB(BoardStartBuilder):
     def build(self) -> Grid:
-        grid: Grid = [
-            [None for _ in range(self.size)]
-            for _ in range(self.size)
-        ]
+        grid: Grid = [[None for _ in range(self.size)] for _ in range(self.size)]
 
         # Init black pieces
         for col in range(self.size):
@@ -52,7 +46,6 @@ class LastRowBSB(BoardStartBuilder):
         # Init white pieces
         for col in range(self.size):
             if (self.size - 1 + col) % 2 == 1:
-                grid[self.size -
-                     1][col] = Piece((self.size - 1, col), Colour.WHITE)
+                grid[self.size - 1][col] = Piece((self.size - 1, col), Colour.WHITE)
 
         return grid

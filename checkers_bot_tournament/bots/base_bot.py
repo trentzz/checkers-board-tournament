@@ -1,8 +1,8 @@
+from abc import ABC
+
 from checkers_bot_tournament.board import Board
 from checkers_bot_tournament.move import Move
 from checkers_bot_tournament.piece import Colour
-
-from abc import ABC
 
 
 class Bot(ABC):

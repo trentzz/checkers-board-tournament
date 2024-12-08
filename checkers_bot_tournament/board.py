@@ -1,8 +1,8 @@
 from typing import Optional, Tuple
 
-from checkers_bot_tournament.move import Move
-from checkers_bot_tournament.piece import Piece, Colour
 from checkers_bot_tournament.board_start_builder import BoardStartBuilder
+from checkers_bot_tournament.move import Move
+from checkers_bot_tournament.piece import Colour, Piece
 
 Grid = list[list[Optional[Piece]]]
 
@@ -27,7 +27,7 @@ class Board:
         start_row, start_col = move.start
         end_row, end_col = move.end
         piece = self.grid[start_row][start_col]
-        assert (piece is not None)
+        assert piece is not None
 
         # Perform the move
         self.grid[start_row][start_col] = None
@@ -47,8 +47,8 @@ class Board:
 
         # Promote to king
         if (not piece.is_king) and (
-            (piece.colour == Colour.WHITE and end_row == 0) or
-            (piece.colour == Colour.BLACK and end_row == self.size - 1)
+            (piece.colour == Colour.WHITE and end_row == 0)
+            or (piece.colour == Colour.BLACK and end_row == self.size - 1)
         ):
             piece.is_king = True
             promotion = True
@@ -57,24 +57,32 @@ class Board:
 
     def add_regular_move(self, moves: list[Move], row: int, col: int, dr: int, dc: int):
         end_row, end_col = row + dr, col + dc
-        if (self.is_within_bounds(end_row, end_col)
-                and self.grid[end_row][end_col] is None):
+        if self.is_within_bounds(end_row, end_col) and self.grid[end_row][end_col] is None:
             moves.append(Move((row, col), (end_row, end_col), None))
 
-    def add_capture_move(self, moves: list[Move], colour: Colour, row: int, col: int, dr: int, dc: int):
+    def add_capture_move(
+        self, moves: list[Move], colour: Colour, row: int, col: int, dr: int, dc: int
+    ):
         capture_row, capture_col = row + 2 * dr, col + 2 * dc
         if not self.is_within_bounds(capture_row, capture_col):
             return
 
         mid_row, mid_col = row + dr, col + dc
         mid_piece: Optional[Piece] = self.grid[mid_row][mid_col]
-        valid_capture_move = (self.grid[capture_row][capture_col] is None
-                              and mid_piece is not None
-                              and mid_piece.colour != colour)
+        valid_capture_move = (
+            self.grid[capture_row][capture_col] is None
+            and mid_piece is not None
+            and mid_piece.colour != colour
+        )
 
         if valid_capture_move:
             moves.append(
-                Move((row, col), (capture_row, capture_col), (mid_row, mid_col),))
+                Move(
+                    (row, col),
+                    (capture_row, capture_col),
+                    (mid_row, mid_col),
+                )
+            )
 
     def is_valid_move(self, colour: Colour, move: Move) -> bool:
         return move in self.get_move_list(colour)
@@ -83,20 +91,15 @@ class Board:
         moves: list[Move] = []
 
         # Directions for normal pieces
-        forward_directions = (
-            [(-1, -1), (-1, 1)] if colour == Colour.WHITE else [(1, -1), (1, 1)]
-        )
+        forward_directions = [(-1, -1), (-1, 1)] if colour == Colour.WHITE else [(1, -1), (1, 1)]
         # Directions for kings (can move in all four diagonals)
-        king_directions = forward_directions + [
-            (-d[0], -d[1]) for d in forward_directions
-        ]
+        king_directions = forward_directions + [(-d[0], -d[1]) for d in forward_directions]
 
         for row in range(self.size):
             for col in range(self.size):
                 piece = self.get_piece((row, col))
                 if piece and piece.colour == colour:
-                    directions = (
-                        king_directions if piece.is_king else forward_directions)
+                    directions = king_directions if piece.is_king else forward_directions
 
                     for dr, dc in directions:
                         self.add_regular_move(moves, row, col, dr, dc)
@@ -107,8 +110,7 @@ class Board:
         # allow captures moves.
         capture_move_available = any([move.removed for move in moves])
         if capture_move_available:
-            capture_moves = list(
-                filter(lambda move: move.removed is not None, moves))
+            capture_moves = list(filter(lambda move: move.removed is not None, moves))
             return capture_moves
 
         # If no capture moves available, return all moves
@@ -120,11 +122,7 @@ class Board:
     def get_piece(self, position: Tuple[int, int]) -> Optional[Piece]:
         """Return the piece at a specific position."""
         row, col = position
-        return (
-            self.grid[row][col]
-            if 0 <= row < self.size and 0 <= col < self.size
-            else None
-        )
+        return self.grid[row][col] if 0 <= row < self.size and 0 <= col < self.size else None
 
     def get_move_history(self) -> list[Move]:
         return self.move_history
@@ -152,10 +150,7 @@ class Board:
         # Looks disgusting but yay pythom
         return (
             "\n".join(
-                " ".join(
-                    self.display_cell(cell, x, y)
-                    for x, cell in enumerate(row)
-                )
+                " ".join(self.display_cell(cell, x, y) for x, cell in enumerate(row))
                 for y, row in enumerate(self.grid)
             )
             + "\n"

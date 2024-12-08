@@ -1,9 +1,9 @@
-from checkers_bot_tournament.bots.base_bot import Bot
-from checkers_bot_tournament.board import Board
-from checkers_bot_tournament.piece import Colour
-from checkers_bot_tournament.move import Move
-
 import copy
+
+from checkers_bot_tournament.board import Board
+from checkers_bot_tournament.bots.base_bot import Bot
+from checkers_bot_tournament.move import Move
+from checkers_bot_tournament.piece import Colour
 
 
 class ScaredyCat(Bot):
@@ -23,7 +23,12 @@ class ScaredyCat(Bot):
             if len(move_list_2) == 0:
                 # Great! This move wins the game.
                 return i1
-            scores1.append((i1, len(move_list_2),))
+            scores1.append(
+                (
+                    i1,
+                    len(move_list_2),
+                )
+            )
 
         # Give our opponent as many choices as possible
         # Indirectly means we tend to offer them less capturing chances

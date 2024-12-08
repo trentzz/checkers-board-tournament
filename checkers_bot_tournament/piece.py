@@ -1,6 +1,5 @@
-from typing import Tuple, Literal
-
-from enum import auto, Enum
+from enum import Enum, auto
+from typing import Tuple
 
 
 class Colour(Enum):

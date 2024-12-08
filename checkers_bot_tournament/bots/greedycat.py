@@ -1,9 +1,9 @@
-from checkers_bot_tournament.bots.base_bot import Bot
-from checkers_bot_tournament.board import Board
-from checkers_bot_tournament.piece import Colour
-from checkers_bot_tournament.move import Move
-
 import copy
+
+from checkers_bot_tournament.board import Board
+from checkers_bot_tournament.bots.base_bot import Bot
+from checkers_bot_tournament.move import Move
+from checkers_bot_tournament.piece import Colour
 
 
 class GreedyCat(Bot):
@@ -40,13 +40,13 @@ class GreedyCat(Bot):
 
                 # Score by number of moves WE can make
                 s2 = self.do_scoring(searchboard2, colour)
-                scores2.append((i2, s2,))
+                scores2.append((i2, s2))
 
             # print(f"{scores2=}")
             # As opp, one would want to minimise our score. Save the i1th move
             # that would achieve this
             min_index2, min_score2 = min(scores2, key=lambda x: x[1])
-            scores1.append((i1, min_score2,))
+            scores1.append((i1, min_score2))
 
         # Now as ourselves, we want to maximise our score assuming our opp
         # wants to do us as much harm as they can (albeit from by our metrics)
@@ -72,8 +72,9 @@ class GreedyCat(Bot):
                     search_board = copy.deepcopy(board)
                     search_board.move_piece(move)
                     score = evaluate_at_point_of_no_captures(
-                        search_board, colour_to_move.get_opposite())
-                    scores.append((i, score,))
+                        search_board, colour_to_move.get_opposite()
+                    )
+                    scores.append((i, score))
                 if our_colour == colour_to_move:
                     # we just made a range of moves; the scores are opponent's eval
                     # so we wanna take the max score

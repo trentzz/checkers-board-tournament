@@ -1,8 +1,7 @@
 from random import randint
-from typing import Optional
 
-from checkers_bot_tournament.bots.base_bot import Bot
 from checkers_bot_tournament.board import Board
+from checkers_bot_tournament.bots.base_bot import Bot
 from checkers_bot_tournament.move import Move
 from checkers_bot_tournament.piece import Colour
 
@@ -18,15 +17,19 @@ class CopyCat(Bot):
     def get_mirror_move(self, board: Board, move: Move) -> Move:
         board_size = board.size
         mirrored_start = (
-            board_size - 1 - move.start[0], board_size - 1 - move.start[1])
-        mirrored_end = (board_size - 1 -
-                        move.end[0], board_size - 1 - move.end[1])
+            board_size - 1 - move.start[0],
+            board_size - 1 - move.start[1],
+        )
+
+        mirrored_end = (board_size - 1 - move.end[0], board_size - 1 - move.end[1])
 
         # Reflect the removed piece position, if any
         mirrored_removed = None
         if move.removed:
             mirrored_removed = (
-                board_size - 1 - move.removed[0], board_size - 1 - move.removed[1])
+                board_size - 1 - move.removed[0],
+                board_size - 1 - move.removed[1],
+            )
 
         return Move(mirrored_start, mirrored_end, mirrored_removed)
 

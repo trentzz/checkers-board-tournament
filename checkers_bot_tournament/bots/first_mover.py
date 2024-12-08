@@ -1,7 +1,7 @@
-from checkers_bot_tournament.bots.base_bot import Bot
 from checkers_bot_tournament.board import Board
-from checkers_bot_tournament.piece import Colour
+from checkers_bot_tournament.bots.base_bot import Bot
 from checkers_bot_tournament.move import Move
+from checkers_bot_tournament.piece import Colour
 
 
 class FirstMover(Bot):

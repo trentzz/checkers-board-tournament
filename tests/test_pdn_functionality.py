@@ -1,9 +1,10 @@
 import pytest
-import os
-from checkers_bot_tournament.board import Board, BoardState
+
+from checkers_bot_tournament.board import Board
+from checkers_bot_tournament.board_start_builder import DefaultBSB
+from checkers_bot_tournament.bots.base_bot import Bot
 from checkers_bot_tournament.game import Game
 from checkers_bot_tournament.move import Move
-from checkers_bot_tournament.bots.base_bot import Bot
 
 
 @pytest.fixture
@@ -25,8 +26,7 @@ def test_import_pdn_from_string(temp_pdn_file, sample_pdn):
     temp_pdn_file.write_text(sample_pdn)
 
     # Create a board and import the PDN
-    game = Game(Bot(0), Bot(0), Board(BoardState.DEFAULT),
-                0, 0, False, temp_pdn_file)
+    game = Game(Bot(0), Bot(0), Board(DefaultBSB()), 0, 0, False, temp_pdn_file)
 
     # Expected move list (calculated manually)
     expected_moves = [
@@ -55,8 +55,7 @@ def test_import_pdn_from_string(temp_pdn_file, sample_pdn):
 def test_export_pdn(temp_pdn_file):
     """Test that the board's move history is correctly exported to a PDN file."""
 
-    game = Game(Bot(0), Bot(0), Board(BoardState.DEFAULT),
-                0, 0, False, None)
+    game = Game(Bot(0), Bot(0), Board(DefaultBSB()), 0, 0, False, None)
     moves = [
         Move((5, 2), (4, 1), None),  # 22-17
         Move((2, 5), (3, 4), None),  # 11-15
@@ -89,8 +88,7 @@ def test_import_export_consistency(temp_pdn_file, sample_pdn):
     temp_pdn_file.write_text(sample_pdn)
 
     # Create a board, import the PDN, and export it to a new file
-    game = Game(Bot(0), Bot(0), Board(BoardState.DEFAULT),
-                0, 0, False, None)
+    game = Game(Bot(0), Bot(0), Board(DefaultBSB()), 0, 0, False, None)
     game.import_pdn(temp_pdn_file)
 
     # Export to a new PDN file

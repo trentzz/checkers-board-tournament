@@ -4,6 +4,11 @@ from datetime import datetime
 from typing import IO, Dict, Optional, Type
 
 from checkers_bot_tournament.board import Board
+from checkers_bot_tournament.board_start_builder import (
+    BoardStartBuilder,
+    DefaultBSB,
+    LastRowBSB,
+)
 from checkers_bot_tournament.bots.base_bot import Bot
 from checkers_bot_tournament.bots.copycat import CopyCat
 from checkers_bot_tournament.bots.first_mover import FirstMover
@@ -35,41 +40,56 @@ class GameResultStat:
 
 
 class Controller:
+    # BOT TODO: Add your bot mapping here!
+    bot_mapping: Dict[str, Type[Bot]] = {
+        "RandomBot": RandomBot,
+        "FirstMover": FirstMover,
+        "ScaredyCat": ScaredyCat,
+        "GreedyCat": GreedyCat,
+        "CopyCat": CopyCat,
+    }
+
+    board_start_builder_mapping: Dict[str, Type[BoardStartBuilder]] = {
+        "default": DefaultBSB,
+        "last_row": LastRowBSB,
+    }
+
     def __init__(
         self,
         mode: str,
+        board_start_builder: str,
+        pdn: Optional[str],
         bot: Optional[str],
         bot_list: list[str],
         size: int,
         rounds: int,
         verbose: bool,
         output_dir: str,
+        export_pdn: bool,
     ):
         self.mode = mode
+        self.size = size
+
+        self.board_start_builder: BoardStartBuilder = self._get_board_start_builder(
+            board_start_builder
+        )
+
+        self.pdn = pdn
         self.bot = bot
 
         # NOTE: From design perspective, I think it's better to verify bots at this point
         # using the bot mapping, then keeping a list of bot classes.
+        self._verify_bot_list(bot_list)
         self.bot_list = bot_list
-        # NOTE: size currently not used
-        self.size = size
         self.rounds = rounds
         self.verbose = verbose
         self.output_dir = output_dir
+        self.export_pdn = export_pdn
 
         # Inits for non-params
         self.game_results: list[GameResult] = []
         self.game_id_counter: int = 0
-        # self.game_results_folder: Optional[str] = None
-
-        # BOT TODO: Add your bot mapping here!
-        self.bot_mapping: Dict[str, Type[Bot]] = {
-            "RandomBot": RandomBot,
-            "FirstMover": FirstMover,
-            "ScaredyCat": ScaredyCat,
-            "GreedyCat": GreedyCat,
-            "CopyCat": CopyCat,
-        }
+        self.game_results_folder: str = ""
 
     def run(self) -> None:
         self._create_timestamped_folder()
@@ -87,6 +107,27 @@ class Controller:
 
         self._write_game_results()
 
+    def _get_board_start_builder(self, board_start_builder: str) -> BoardStartBuilder:
+        if board_start_builder not in Controller.board_start_builder_mapping:
+            raise ValueError(
+                f"board_state: {board_start_builder} not recognised!")
+
+        board_start_builder_class = Controller.board_start_builder_mapping[
+            board_start_builder
+        ]
+        return board_start_builder_class(self.size)
+
+    def _verify_bot_list(self, bot_list: list[str]) -> None:
+        unrecognised_bots = []
+        for bot in bot_list:
+            if bot not in Controller.bot_mapping:
+                unrecognised_bots.append(bot)
+
+        if unrecognised_bots:
+            raise ValueError(
+                f"bots: {', '.join(unrecognised_bots)} entered in CLI not recognised!"
+            )
+
     def _create_timestamped_folder(self, prefix: str = "checkers_game_results") -> None:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
@@ -99,11 +140,11 @@ class Controller:
         self.game_results_folder = folder_path
 
     def _return_bot_class(self, bot: UniqueBot) -> Bot:
-        if bot.name in self.bot_mapping:
-            bot_class = self.bot_mapping[bot.name]
-            return bot_class(bot_id=bot.idx)
-        else:
-            raise ValueError(f"bot name {bot.name} entered in CLI not recognised!")
+        """
+        Assumes the bot names have already been verified earlier.
+        """
+        bot_class = Controller.bot_mapping[bot.name]
+        return bot_class(bot_id=bot.idx)
 
     def _run_all(self) -> None:
         """
@@ -131,9 +172,19 @@ class Controller:
         white_bot = self._return_bot_class(white)
         black_bot = self._return_bot_class(black)
 
-        game = Game(white_bot, black_bot, Board(), game_id, game_round, self.verbose)
+        board = Board(self.board_start_builder)
+
+        game = Game(
+            white_bot, black_bot, board, game_id, game_round, self.verbose, self.pdn
+        )
         game.run()
         self.game_results.append(game.get_game_result())
+
+        if self.export_pdn:
+            game_result_pdn_path = os.path.join(
+                self.game_results_folder, f"game_{game_id}.pdn"
+            )
+            game.export_pdn(game_result_pdn_path)
 
     def _get_new_game_id(self) -> int:
         self.game_id_counter += 1
@@ -246,9 +297,11 @@ class Controller:
 
         game_result_map: Dict[str, GameResultStat] = {}
         if self.bot:
-            game_result_map[make_unique_bot_string(-1, self.bot)] = GameResultStat()
+            game_result_map[make_unique_bot_string(
+                -1, self.bot)] = GameResultStat()
         for idx, name in enumerate(self.bot_list):
-            game_result_map[make_unique_bot_string(idx, name)] = GameResultStat()
+            game_result_map[make_unique_bot_string(
+                idx, name)] = GameResultStat()
 
         for game in self.game_results:
             # Add winner

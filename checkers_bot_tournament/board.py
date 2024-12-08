@@ -1,42 +1,21 @@
 from typing import Optional, Tuple
 
+from checkers_bot_tournament.board_start_builder import BoardStartBuilder
 from checkers_bot_tournament.move import Move
 from checkers_bot_tournament.piece import Colour, Piece
 
+Grid = list[list[Optional[Piece]]]
+
 
 class Board:
-    def __init__(self, size: int = 8):
+    def __init__(self, board_start_builder: BoardStartBuilder, size: int = 8):
         self.size = size  # Note that size must always be even
         if size % 2 != 0:
             raise ValueError("Even board sizes only.")
 
-        self.grid: list[list[Optional[Piece]]] = [
-            [None for _ in range(self.size)] for _ in range(self.size)
-        ]
+        self.grid: Grid = board_start_builder.build()
 
         self.move_history: list[Move] = []
-
-        self.initialise_pieces()
-
-    def initialise_pieces(self) -> None:
-        """
-        Initialises pieces on the board. The black pieces are from 0 to (half - 1)
-        and the white pieces are from (half - 1) to size. There will always be
-        a two row gap between the pieces to start with.
-        """
-
-        half = int(self.size / 2)
-        # Init black pieces
-        for row in range(half - 1):
-            for col in range(self.size):
-                if (row + col) % 2 == 1:
-                    self.grid[row][col] = Piece((row, col), Colour.BLACK)
-
-        # Init white pieces
-        for row in range(half + 1, self.size):
-            for col in range(self.size):
-                if (row + col) % 2 == 1:
-                    self.grid[row][col] = Piece((row, col), Colour.WHITE)
 
     def move_piece(self, move: Move) -> Tuple[bool, bool]:
         """
@@ -107,6 +86,9 @@ class Board:
                     (mid_row, mid_col),
                 )
             )
+
+    def is_valid_move(self, colour: Colour, move: Move) -> bool:
+        return move in self.get_move_list(colour)
 
     def get_move_list(self, colour: Colour) -> list[Move]:
         moves: list[Move] = []

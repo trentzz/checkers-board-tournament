@@ -7,16 +7,16 @@ from checkers_bot_tournament.piece import Colour
 
 
 class GreedyCat(Bot):
+    """
+    Maximise my material after 3 layers of search
+    """
+
     def __init__(self, bot_id: int) -> None:
         super().__init__(bot_id)
         self.ply = 1
 
         self.man_value = 1
         self.king_value = 4
-
-    """
-    Maximise the length of my move_list after my opponent's best move
-    """
 
     def play_move(self, board: Board, colour: Colour, move_list: list[Move]) -> int:
         # print(f"Ply {self.ply if colour == Colour.WHITE else self.ply + 1} as {colour}")
@@ -35,7 +35,8 @@ class GreedyCat(Bot):
             scores2: list[tuple[int, int]] = []
             for i2, move2 in enumerate(move_list_2):
                 searchboard2 = copy.deepcopy(searchboard)
-                searchboard2.move_piece(move2)  # Opp's candidate move, now our turn
+                # Opp's candidate move, now our turn
+                searchboard2.move_piece(move2)
 
                 # Score by number of moves WE can make
                 s2 = self.do_scoring(searchboard2, colour)

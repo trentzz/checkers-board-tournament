@@ -20,6 +20,7 @@ class CopyCat(Bot):
             board_size - 1 - move.start[0],
             board_size - 1 - move.start[1],
         )
+
         mirrored_end = (board_size - 1 - move.end[0], board_size - 1 - move.end[1])
 
         # Reflect the removed piece position, if any

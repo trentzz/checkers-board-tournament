@@ -1,98 +1,21 @@
-import re
 from typing import Optional, Tuple
-from enum import auto, Enum
 
 from checkers_bot_tournament.move import Move
 from checkers_bot_tournament.piece import Piece, Colour
+from checkers_bot_tournament.board_start_builder import BoardStartBuilder
 
 Grid = list[list[Optional[Piece]]]
 
 
-class BoardState(Enum):
-    """
-    DEFAULT:    Normal checkers
-    LAST_ROW:   Only the last row of the board is populated
-    """
-    DEFAULT = auto()
-    LAST_ROW = auto()
-
-
-class BoardStateBuilder:
-    @staticmethod
-    def make_board_state_default(size: int) -> Grid:
-        grid: Grid = [
-            [None for _ in range(size)]
-            for _ in range(size)
-        ]
-
-        half = int(size / 2)
-        # Init black pieces
-        for row in range(half - 1):
-            for col in range(size):
-                if (row + col) % 2 == 1:
-                    grid[row][col] = Piece((row, col), Colour.BLACK)
-
-        # Init white pieces
-        for row in range(half + 1, size):
-            for col in range(size):
-                if (row + col) % 2 == 1:
-                    grid[row][col] = Piece((row, col), Colour.WHITE)
-
-        return grid
-
-    @staticmethod
-    def make_board_state_last_row(size: int) -> Grid:
-        grid: Grid = [
-            [None for _ in range(size)]
-            for _ in range(size)
-        ]
-
-        # Init black pieces
-        for col in range(size):
-            if (0 + col) % 2 == 1:
-                grid[0][col] = Piece((0, col), Colour.BLACK)
-
-        # Init white pieces
-        for col in range(size):
-            if (size - 1 + col) % 2 == 1:
-                grid[size - 1][col] = Piece((size - 1, col), Colour.WHITE)
-
-        return grid
-
-    @staticmethod
-    def make_board_state(board_state: BoardState, size: int) -> Grid:
-        match board_state:
-            case BoardState.DEFAULT:
-                return BoardStateBuilder.make_board_state_default(size)
-            case BoardState.LAST_ROW:
-                return BoardStateBuilder.make_board_state_last_row(size)
-
-
 class Board:
-    def __init__(self, board_state: BoardState, size: int = 8):
-        self.board_state = board_state
-
+    def __init__(self, board_start_builder: BoardStartBuilder, size: int = 8):
         self.size = size  # Note that size must always be even
         if size % 2 != 0:
             raise ValueError("Even board sizes only.")
 
-        self.grid: Grid = [
-            [None for _ in range(self.size)]
-            for _ in range(self.size)
-        ]
+        self.grid: Grid = board_start_builder.build()
 
         self.move_history: list[Move] = []
-
-        self.initialise_pieces()
-
-    def initialise_pieces(self) -> None:
-        """
-        Initialises pieces on the board. The black pieces are from 0 to (half - 1)
-        and the white pieces are from (half - 1) to size. There will always be
-        a two row gap between the pieces to start with.
-        """
-        self.grid = BoardStateBuilder.make_board_state(
-            self.board_state, self.size)
 
     def move_piece(self, move: Move) -> Tuple[bool, bool]:
         """

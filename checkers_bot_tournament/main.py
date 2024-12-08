@@ -16,11 +16,11 @@ def main():
     )
 
     parser.add_argument(
-        "--board-state",
+        "--board-start",
         type=str,
         choices=["default", "last_row"],
         default="default",
-        help="Initial board state (this can be used together with --pdn)"
+        help="Initial board start (this can be used together with --pdn)"
     )
 
     parser.add_argument(
@@ -90,7 +90,7 @@ def main():
     # Create the controller
     controller = Controller(
         mode=args.mode,
-        board_state=args.board_state,
+        board_start_builder=args.board_start,
         pdn=args.pdn,
         bot=args.bot,
         bot_list=args.bot_list,

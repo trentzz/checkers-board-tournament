@@ -4,7 +4,8 @@ from typing import Optional, Dict, Type, IO
 from dataclasses import dataclass
 from checkers_bot_tournament.game import Game
 from checkers_bot_tournament.game_result import Result, GameResult
-from checkers_bot_tournament.board import Board, BoardState
+from checkers_bot_tournament.board import Board
+from checkers_bot_tournament.board_start_builder import BoardStartBuilder, DefaultBSB, LastRowBSB
 from checkers_bot_tournament.bots.base_bot import Bot
 from checkers_bot_tournament.checkers_util import make_unique_bot_string
 
@@ -43,15 +44,17 @@ class Controller:
         "CopyCat": CopyCat,
     }
 
-    board_state_mapping: Dict[str, BoardState] = {
-        "default": BoardState.DEFAULT,
-        "last_row": BoardState.LAST_ROW
+    board_start_builder_mapping: Dict[str, Type[BoardStartBuilder]] = {
+        "default": DefaultBSB,
+        "last_row": LastRowBSB
     }
 
-    def __init__(self, mode: str, board_state: str, pdn: Optional[str], bot: Optional[str], bot_list: list[str], size: int, rounds: int, verbose: bool, output_dir: str, export_pdn: bool):
+    def __init__(self, mode: str, board_start_builder: str, pdn: Optional[str], bot: Optional[str], bot_list: list[str], size: int, rounds: int, verbose: bool, output_dir: str, export_pdn: bool):
         self.mode = mode
+        self.size = size
 
-        self.board_state: BoardState = self._verify_board_state(board_state)
+        self.board_start_builder: BoardStartBuilder = self._get_board_start_builder(
+            board_start_builder)
 
         self.pdn = pdn
         self.bot = bot
@@ -60,8 +63,6 @@ class Controller:
         # using the bot mapping, then keeping a list of bot classes.
         self._verify_bot_list(bot_list)
         self.bot_list = bot_list
-        # NOTE: size currently not used
-        self.size = size
         self.rounds = rounds
         self.verbose = verbose
         self.output_dir = output_dir
@@ -86,11 +87,13 @@ class Controller:
 
         self._write_game_results()
 
-    def _verify_board_state(self, board_state: str) -> BoardState:
-        if board_state not in Controller.board_state_mapping:
-            raise ValueError(f"board_state: {board_state} not recognised!")
+    def _get_board_start_builder(self, board_start_builder: str) -> BoardStartBuilder:
+        if board_start_builder not in Controller.board_start_builder_mapping:
+            raise ValueError(
+                f"board_state: {board_start_builder} not recognised!")
 
-        return Controller.board_state_mapping[board_state]
+        board_start_builder_class = Controller.board_start_builder_mapping[board_start_builder]
+        return board_start_builder_class(self.size)
 
     def _verify_bot_list(self, bot_list: list[str]) -> None:
         unrecognised_bots = []
@@ -144,7 +147,7 @@ class Controller:
         white_bot = self._return_bot_class(white)
         black_bot = self._return_bot_class(black)
 
-        board = Board(self.board_state)
+        board = Board(self.board_start_builder)
 
         game = Game(white_bot, black_bot, board, game_id,
                     game_round, self.verbose, self.pdn)

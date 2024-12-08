@@ -8,7 +8,7 @@ import copy
 
 class GreedyCat(Bot):
     """
-    Maximise the length of my move_list after my opponent's best move
+    Maximise my material after 3 layers of search
     """
 
     def __init__(self, bot_id: int) -> None:

@@ -19,7 +19,50 @@ poetry run checkers -h
 
 ```bash
 poetry run checkers -h
+
+usage: checkers [-h] --mode {one,all} [--board-state {default,last_row}] [--pdn PDN]
+                [--bot BOT] [--size SIZE] [--rounds ROUNDS] [--verbose] [--export-pdn]
+                [--output-dir OUTPUT_DIR]
+                bot_list [bot_list ...]
+
+checkers-board-tournament cli
+
+positional arguments:
+  bot_list              List of bots
+
+options:
+  -h, --help            show this help message and exit
+  --mode {one,all}      Mode of the game: 'one' for one bot against others, 'all' for all
+                        bots against each other.
+  --board-state {default,last_row}
+                        Initial board state (this can be used together with --pdn)
+  --pdn PDN             Initialise a game using a PDN
+  --bot BOT             Name or path of the bot to use (required in 'one' mode).
+  --size SIZE           Size of the board (default: 8).
+  --rounds ROUNDS       Number of rounds to play (default: 1).
+  --verbose             Enable verbose output.
+  --export-pdn          Export as pdn output.
+  --output-dir OUTPUT_DIR
+                        Directory to save output files (default: .).
 ```
+
+### Options
+
+There are two ways to initialise a game, with `--board-state` options and a `--pdn` file (they can be used together).
+
+#### Portable Draughts Notation
+
+More information about PDN can be found here:
+
+<https://en.wikipedia.org/wiki/Portable_Draughts_Notation>
+
+To view the checkers games in a UI website:
+<https://playcheckers.io/analyze>
+
+#### Outputs
+
+`--verbose` outputs a formatted game with extra information.
+`--export-pdn` outputs a pdn file.
 
 ### Examples
 
@@ -64,6 +107,28 @@ I'll promote `add-your-bot-here` to `main` every once in a while (after testing)
 - Tournament mode
 - Benchmark all available bots and add rankings to readme periodically
 
+### Scripts
+
+Poetry is used to manage dependencies and [poethepoet](https://pypi.org/project/poethepoet/) is used to manage custom scripts.
+
+Available development scripts are:
+
+- `poetry run poe format` - Formats the code
+- `poetry run poe format_check` - Checks if code is formatted
+- `poetry run poe check` - Perform a suite of static checks
+- `poetry run poe fix` - Apply formatting and static checks fixes
+- `poetry run poe test` - Runs the tests with coverage report
+
+You can run the following command to automatically apply `format` and `check` before each commit and push:
+
+- `poetry run pre-commit install` - Installs pre-commit hooks
+
+### VSCode
+
+For VSCode users, the following extensions are recommended:
+
+- Ruff
+
 ## Checkers Rules
 
 Not an exhaustive list:
@@ -94,9 +159,9 @@ Not an exhaustive list:
 
 ### Bots
 
-|  Username   |  Bots   |
-| --- | --- |
-|  trentzz   |   RandomBot, FirstMover, CopyCat  |
-|  donren-leung | ScaredyCat, GreedyCat |
+| Username     | Bots                           |
+| ------------ | ------------------------------ |
+| trentzz      | RandomBot, FirstMover, CopyCat |
+| donren-leung | ScaredyCat, GreedyCat          |
 
 Finally feel free to open an issue if I did something dumb (very likely).

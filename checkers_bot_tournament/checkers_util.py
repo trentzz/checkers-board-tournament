@@ -2,15 +2,16 @@ from typing import overload
 
 from checkers_bot_tournament.bots.base_bot import Bot
 
-@overload
-def make_unique_bot_string(idx: int, bot: str) -> str:
-    ...
 
 @overload
-def make_unique_bot_string(bot: Bot) -> str:
-    ...
+def make_unique_bot_string(idx: int, bot: str) -> str: ...
 
-def make_unique_bot_string(*args, **kwargs) -> str:
+
+@overload
+def make_unique_bot_string(bot: Bot) -> str: ...
+
+
+def make_unique_bot_string(*args, **_kwargs) -> str:
     """
     This exists because we can have multiple of the same bot playing each other
     so we need a way to differentiate them.

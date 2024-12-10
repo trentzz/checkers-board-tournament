@@ -45,7 +45,7 @@ class Game:
         self.game_result: Optional[GameResult] = None
         self.moves = "" # if verbose else None
 
-    def make_move(self) -> Tuple[Optional[Move], bool]:
+    def make_move(self) -> Optional[Result]:
         bot = self.white.bot if self.current_turn == Colour.WHITE else self.black.bot
         move_list: list[Move] = self.board.get_move_list(self.current_turn)
 
@@ -53,8 +53,8 @@ class Game:
             result = Result.BLACK if self.current_turn == Colour.WHITE else Result.WHITE
             # TODO: You can add extra information here (and pass it into write_game_result)
             # and GameResult as needed
-            self.write_game_result(result)
-            return (None, True)
+            # self.write_game_result(result)
+            return result
 
         # TODO: Add a futures thingo to limit each bot to 10 seconds per move or smth
         # from concurrent.futures import ThreadPoolExecutor
@@ -92,12 +92,12 @@ class Game:
 
             if self.verbose:
                 self.moves += f"Automatic draw by {AUTO_DRAW_MOVECOUNT/2}-move rule!\n"
-            self.write_game_result(result)
-            return move, True
+            # self.write_game_result(result)
+            return result
 
         self.move_number += 1
 
-        return move, False
+        return None
 
     def _record_capture(self) -> None:
         if self.current_turn == Colour.WHITE:
@@ -111,16 +111,18 @@ class Game:
         else:
             self.black_kings_made += 1
 
-    def run(self) -> None:
+    def run(self) -> GameResult:
         while True:
             # TODO: Implement chain moves (use is_first_move)
-            move, stop = self.make_move()
-            if move is None or stop:
+            result = self.make_move()
+            if result:
                 break
+            else:
+                self.swap_turn()
 
-            self.swap_turn()
+        return self._write_game_result(result)
 
-    def write_game_result(self, result: Result) -> None:
+    def _write_game_result(self, result: Result) -> GameResult:
         self.game_result = GameResult(game_id=self.game_id, game_round=self.game_round,
                                       result=result,
                                       white_name=make_unique_bot_string(self.white),
@@ -132,9 +134,6 @@ class Game:
                                       black_kings_made=self.black_kings_made,
                                       black_num_captures=self.black_num_captures,
                                       num_moves=self.move_number, moves=self.moves)
-
-    def get_game_result(self) -> GameResult:
-        assert(self.game_result is not None)
         return self.game_result
 
     def swap_turn(self) -> None:

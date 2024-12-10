@@ -32,6 +32,7 @@ class Controller:
         # Inits for non-params
         # List of rounds, each round being a list of games
         self.games: list[list[Game]] = [[] for _ in range(rounds)]
+        self.game_results: list[list[GameResult]] = [[] for _ in range(rounds)]
         self.game_id_counter: int = 0
         # self.game_results_folder: Optional[str] = None
         
@@ -79,7 +80,8 @@ class Controller:
         if self.verbose:
             games_per_round = len(self.games[0])
             total = len(self.games[0]) * self.rounds
-            print(f"{games_per_round} double round-robin games/round * {self.rounds} rounds = {total} games scheduled")
+            print(f"{len(self.bot_list)} bots registered")
+            print(f"{games_per_round} double-round-robin games/tourney * {self.rounds} tourneys = {total} games scheduled")
 
     def _init_all_schedule(self) -> None:
         """
@@ -116,16 +118,21 @@ class Controller:
     def run(self) -> None:
         self._create_timestamped_folder()
         for rnd in range(self.rounds):
-            evs: list[Tuple[float, float]] = []
+            # Sum of EV score for each player
+            # based on all games they will play in this tournament
+            evs: list[list[float]]
             for game in self.games[rnd]:
                 ev_white = game.white.calculate_ev(game.black)
                 ev_black = 1 - ev_white
-                evs.append((ev_white, ev_black,))
-                game.run()
 
-                # TODO: game_result needs to be refactored this is annoying
-                assert game.game_result
-                match game.game_result.result:
+                game.white.register_ev(ev_white)
+                game.black.register_ev(ev_black)
+
+            for game in self.games[rnd]:
+                game_result = game.run()
+                self.game_results[rnd].append(game_result)
+
+                match game_result.result:
                     case Result.WHITE:
                         game.white.stats.white_wins += 1
                         game.black.stats.black_losses += 1
@@ -136,15 +143,17 @@ class Controller:
                         game.white.stats.white_draws += 1
                         game.black.stats.black_draws += 1
 
-            self._write_game_results(self.games[rnd])
+            self._write_game_results(self.game_results[rnd])
 
             # Calculate Elo at the end of all matches in a round
-            for game, (ev_white, ev_black) in zip(self.games[rnd], evs):
-                assert game.game_result
+            for game, game_result in zip(self.games[rnd], self.game_results[rnd]):
                 lookup = {Result.WHITE: 1, Result.BLACK: 0, Result.DRAW: 0.5}
 
-                game.white.update_rating(lookup[game.game_result.result], ev_white)
-                game.black.update_rating(1 - lookup[game.game_result.result], ev_black)
+                game.white.register_result(lookup[game_result.result])
+                game.black.register_result(1 - lookup[game_result.result])
+
+            for bot in self.bot_list:
+                bot.update_rating()
 
             if self.verbose:
                 print(f"Round {rnd} completed")
@@ -163,21 +172,21 @@ class Controller:
         os.makedirs(folder_path, exist_ok=True)
         self.game_results_folder = folder_path
             
-    def _write_game_result_summary(self, file: IO, game: Game) -> None:
-        file.write(str(game.game_result))
+    def _write_game_result_summary(self, file: IO, game_result: GameResult) -> None:
+        file.write(str(game_result))
         file.write("\n" + "=" * 40 + "\n")
 
-    def _write_game_results(self, games: list[Game]) -> None:
+    def _write_game_results(self, game_results: list[GameResult]) -> None:
         game_result_summary_path = os.path.join(self.game_results_folder, "game_result_summary.txt")
         with open(game_result_summary_path, "a", encoding="utf-8") as file:
-            for game in games:
-                self._write_game_result_summary(file, game)
-                if game.moves:
-                    game_result_moves_path = os.path.join(self.game_results_folder, f"game_{game.game_id}.txt")
+            for game_result in game_results:
+                self._write_game_result_summary(file, game_result)
+                if game_result.moves:
+                    game_result_moves_path = os.path.join(self.game_results_folder, f"game_{game_result.game_id}.txt")
                     with open(game_result_moves_path, "w", encoding="utf-8") as moves_file:
-                        self._write_game_result_summary(moves_file, game)
+                        self._write_game_result_summary(moves_file, game_result)
                         moves_file.write("Moves: \n")
-                        moves_file.write(game.moves)
+                        moves_file.write(game_result.moves)
 
     def _write_tournament_result_stats(self, file: IO) -> None:
         """

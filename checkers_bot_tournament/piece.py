@@ -1,12 +1,11 @@
-from typing import Tuple, Literal
-
-from enum import auto, Enum
+from enum import Enum, auto
+from typing import Tuple
 
 class Colour(Enum):
     WHITE = auto()
     BLACK = auto()
 
-    def get_opposite(self) -> 'Colour':
+    def get_opposite(self) -> "Colour":
         if self == Colour.WHITE:
             return Colour.BLACK
         elif self == Colour.BLACK:
@@ -17,4 +16,3 @@ class Piece:
         self.position = position
         self.colour = colour
         self.is_king = is_king
-

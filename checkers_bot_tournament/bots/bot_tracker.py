@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from checkers_bot_tournament.bots.base_bot import Bot
-from checkers_bot_tournament.game_result import GameResult, Result
+
 
 @dataclass
 class GameResultStat:
@@ -13,6 +13,7 @@ class GameResultStat:
     black_draws: int = 0
     black_losses: int = 0
 
+
 STARTING_ELO = 1500
 # Dynamic learning rate as per USCF: K = 800/(Ne + m),
 # where Ne is effective number of games a player's rating is based on, and
@@ -20,6 +21,7 @@ STARTING_ELO = 1500
 
 # Each multiple of scale rating difference is a 10x increase in expected score
 SCALE = 400
+
 
 class BotTracker:
     def __init__(self, bot: Bot) -> None:
@@ -33,13 +35,13 @@ class BotTracker:
         self.tournament_evs: list[float] = []
         self.tournament_scores: list[float] = []
 
-    def calculate_ev(self, other: 'BotTracker') -> float:
-        Qa = 10**(self.rating / SCALE)
-        Qb = 10**(other.rating / SCALE)
+    def calculate_ev(self, other: "BotTracker") -> float:
+        Qa = 10 ** (self.rating / SCALE)
+        Qb = 10 ** (other.rating / SCALE)
 
-        Ea = Qa / (Qa + Qb) # Ea + Eb = 1
+        Ea = Qa / (Qa + Qb)  # Ea + Eb = 1
         return Ea
-    
+
     def register_ev(self, ev: float) -> None:
         self.tournament_evs.append(ev)
 

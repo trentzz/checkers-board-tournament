@@ -96,7 +96,7 @@ class Game:
     def export_pdn(self, filename: Optional[str] = None) -> None | str:
         """
         Exports the move history to a PDN file or as a string in PDN format.
-        
+
         If a filename is provided, the PDN content is written to the file.
         If no filename is provided, the PDN content is returned as a string.
         """

@@ -64,6 +64,8 @@ class Controller:
     ):
         self.mode = mode
 
+        # NOTE: size currently not used
+        self.size = size
         self.board_start_builder: BoardStartBuilder = self._get_board_start_builder(
             board_start_builder
         )
@@ -73,8 +75,6 @@ class Controller:
 
         self.bot_list: list[BotTracker] = self._init_bots(bot_names)
 
-        # NOTE: size currently not used
-        self.size = size
         self.rounds = rounds
         self.verbose = verbose
         self.output_dir = output_dir
@@ -99,9 +99,11 @@ class Controller:
         if unrecognised_bots:
             raise ValueError(f"bots: {', '.join(unrecognised_bots)} entered in CLI not recognised!")
 
-        for idx, bot_name in enumerate(bot_names):
+        idx_bot_names: list[tuple[int, str]] = [(idx, bot_name,) for idx, bot_name in enumerate(bot_names)]
+        unique_bot_names = list(map(lambda x: make_unique_bot_string(x[0], x[1]), idx_bot_names))
+        for idx, bot_name in idx_bot_names:
             bot_class = self.bot_mapping[bot_name]
-            bot_list.append(BotTracker(bot=bot_class(bot_id=idx)))
+            bot_list.append(BotTracker(bot=bot_class(bot_id=idx), unique_bot_names=unique_bot_names))
 
         return bot_list
 
@@ -115,8 +117,9 @@ class Controller:
                 try:
                     # Special case: we set the bot id to -1 since the list starts at 0
                     # kinda hacky but uh :D
+                    unique_bot_names = list(map(lambda x: make_unique_bot_string(x), self.bot_list))
                     bot_class = self.bot_mapping[self.bot_name]
-                    hero_bot = BotTracker(bot_class(bot_id=-1))
+                    hero_bot = BotTracker(bot=bot_class(bot_id=-1), unique_bot_names=unique_bot_names)
                 except KeyError:
                     raise ValueError(f"bot name {self.bot_name} entered in CLI not recognised!")
                 self._init_one_schedule(hero_bot)
@@ -202,7 +205,7 @@ class Controller:
             for game in self.games[rnd]:
                 ev_white = game.white.calculate_ev(game.black)
                 ev_black = 1 - ev_white
-                
+
                 # Sum of EV score for each player
                 # based on all games they will play in this tournaments
                 game.white.register_ev(ev_white)
@@ -212,25 +215,12 @@ class Controller:
                 game_result = game.run()
                 self.game_results[rnd].append(game_result)
 
-                match game_result.result:
-                    case Result.WHITE:
-                        game.white.stats.white_wins += 1
-                        game.black.stats.black_losses += 1
-                    case Result.BLACK:
-                        game.white.stats.white_losses += 1
-                        game.black.stats.black_wins += 1
-                    case Result.DRAW:
-                        game.white.stats.white_draws += 1
-                        game.black.stats.black_draws += 1
-
             self._write_game_results(self.game_results[rnd])
 
             # Calculate Elo at the end of all matches in a round
             for game, game_result in zip(self.games[rnd], self.game_results[rnd]):
-                lookup = {Result.WHITE: 1, Result.BLACK: 0, Result.DRAW: 0.5}
-
-                game.white.register_result(lookup[game_result.result])
-                game.black.register_result(1 - lookup[game_result.result])
+                game.white.register_game_result(game_result)
+                game.black.register_game_result(game_result)
 
             for bot in self.bot_list:
                 bot.update_rating()
@@ -293,7 +283,7 @@ class Controller:
             col_width = 8  # For "Win", "Draw", "Loss" columns
 
             # Print the header row once per bot
-            header = f"{'Win':<{col_width}}{'Draw':<{col_width}}{'Loss':<{col_width}}"
+            header = f"{'Win':<{col_width}}{'Draw':<{col_width}}{'Loss':<{col_width}}{'Overall Score':<{col_width}}"
             file.write(f"{'':<{label_width}}{header}\n")
 
             # Compute Overall stats
@@ -341,30 +331,136 @@ class Controller:
 
             file.write("=" * 60 + "\n\n")
 
+    def _write_tournament_h2h_stats(self, file: IO) -> None:
+        """
+        Writes head-to-head (H2H) statistics in a 2D matrix form.
+
+        For each pair of distinct bots (i, j), we show the combined W/D/L results
+        from i's perspective vs j (regardless of color) in the top half of the matrix 
+        (where j > i). The diagonal and lower half remain blank to avoid duplication.
+
+        Also, calculates a performance rating based on the final ratings of the opponent 
+        and the score achieved, and shows the difference between that performance rating 
+        and the bot's own rating.
+        """
+        from math import log10
+
+        file.write("Head-to-Head Statistics\n")
+        file.write("=" * 100 + "\n\n")
+
+        # Extract bot info for indexing
+        bots = self.bot_list
+        n = len(bots)
+
+        # Prepare headers
+        # We'll print a matrix where rows and columns are bots
+        # Column headers: each opponent bot
+        max_name_len = max(len(make_unique_bot_string(bot)) for bot in bots)
+        name_col_width = max_name_len + 10  # some padding for rating
+        cell_width = min(40, name_col_width)  # width for each cell to display W/D/L and PerfRating
+
+        # Print top header row
+        file.write(" " * name_col_width)  # empty space for the left top corner
+        for j in range(n):
+            opp_bot = bots[j]
+            opp_str = make_unique_bot_string(opp_bot)
+            file.write(f"{opp_str} ({round(opp_bot.rating)})".center(cell_width))
+        file.write("\n")
+        file.write("-" * (name_col_width + n * cell_width) + "\n")
+
+        # Function to compute Performance Rating of player against a specific
+        # opponent given both Elo ratings
+        def compute_performance_rating(w: int, d: int, l: int, bot_rating: float, opp_rating: float):
+            # https://en.wikipedia.org/wiki/Performance_rating_(chess)
+            # For player A with total score s_A over a series of n games,
+            # with w wins, d draws, and l losses,
+            # and opponent ratings R_i(R_1, R_2, ..., R_n), the perfect
+            # performance rating is the number R_A where the expected score
+            # on the right equals the actual score s_A on the left:
+            # s_A = w + 0.5 * d; n = w + d + l;
+            # s_A = f(R_A) = [sum i to n] E(A),
+            #              = [sum i to n] 1/(1 + 10^((R_i - R_A)/400)), by Elo
+            #              = n * 1/(1 + 10^((R_opp - R_A)/400)), for a single opp.
+            # (s_A/n)^-1   = 1 + 10^((R_opp - R_A)/400),
+            # (n/s_A) - 1  = 10^((R_opp - R_A)/400),
+            #
+            # 400 * log10((n/s_A) - 1) = R_opp - R_A, therefore
+            # R_A = R_opp - 400 * log10((n/s_A) - 1),
+            #     = R_opp - 400 * log10((1/p) - 1), where p is the perf % s_A/n.
+
+            total = w + d + l
+            if total == 0:
+                return None, None  # no games
+            score = w + 0.5 * d
+            p = score / total
+            if p == 0:
+                # If never scored anything, p=0, D -> -infinity theoretically,
+                # but let's cap it:
+                D = -800
+            elif p == 1:
+                # If always won, p=1 means D -> +infinity. We'll just cap it:
+                D = 800
+            else:
+                D = -400 * log10((1 / p) - 1)
+
+            perf_rating = opp_rating + D
+            diff = perf_rating - bot_rating
+            return perf_rating, diff
+
+        # Print each row
+        for i in range(n):
+            row_bot = bots[i]
+            row_str = make_unique_bot_string(row_bot) + f" ({round(row_bot.rating)})"
+            file.write(f"{row_str:<{name_col_width}}")
+            for j in range(n):
+                if i == j:
+                    # Diagonal - no self matches
+                    cell = "-" * cell_width
+                elif j < i:
+                    # Lower half - leave blank or mark as "---"
+                    cell = "-" * cell_width
+                else:
+                    # Top half: show stats from bot i vs bot j
+                    opp_bot = bots[j]
+                    stat = row_bot.h2h_stats[make_unique_bot_string(opp_bot)]
+                    
+                    # Combine white and black results
+                    w = stat.white_wins + stat.black_wins
+                    d = stat.white_draws + stat.black_draws
+                    l = stat.white_losses + stat.black_losses
+
+                    if (w + d + l) == 0:
+                        # No games played
+                        cell = "N/A".center(cell_width)
+                    else:
+                        # Compute performance rating
+                        perf, diff = compute_performance_rating(
+                            w, d, l,
+                            row_bot.rating,
+                            opp_bot.rating
+                        )
+
+                        if perf is not None and diff is not None:
+                            # Format performance rating and difference
+                            # Example cell content: "W/D/L  PR=XYZ(Δ=+ABC)"
+                            wdl_str = f"{w}/{d}/{l}"
+                            perf_str = f"PR={round(perf)} ({'+' if diff>=0 else ''}{round(diff)})"
+                            # Fit into the cell
+                            cell_content = f"{wdl_str} {perf_str}"
+                        else:
+                            cell_content = "N/A"
+
+                        cell = cell_content.center(cell_width)
+
+                file.write(cell)
+            file.write("\n")
+
+        file.write("\n" + "=" * 100 + "\n\n")
+
     def _write_tournament_results(self) -> None:
         assert self.game_results_folder is not None
         game_result_stats_path = os.path.join(self.game_results_folder, "game_result_stats.txt")
 
-        # game_result_map: Dict[str, GameResultStat] = {}
-        # if self.bot_name:
-        #     game_result_map[make_unique_bot_string(-1, self.bot_name)] = GameResultStat()
-        # for bot in self.bot_list:
-        #     game_result_map[make_unique_bot_string(bot)] = GameResultStat()
-
-        # for game in chain.from_iterable(self.games):
-        #     game_result = game.game_result
-        #     assert game_result
-
-        #     match game_result.result:
-        #         case Result.WHITE:
-        #             game_result_map[game_result.white_name].white_wins += 1
-        #             game_result_map[game_result.black_name].black_losses += 1
-        #         case Result.BLACK:
-        #             game_result_map[game_result.white_name].white_losses += 1
-        #             game_result_map[game_result.black_name].black_wins += 1
-        #         case Result.DRAW:
-        #             game_result_map[game_result.white_name].white_draws += 1
-        #             game_result_map[game_result.black_name].black_draws += 1
-
         with open(game_result_stats_path, "w", encoding="utf-8") as file:
             self._write_tournament_result_stats(file)
+            self._write_tournament_h2h_stats(file)

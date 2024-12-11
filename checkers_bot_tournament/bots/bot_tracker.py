@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from checkers_bot_tournament.bots.base_bot import Bot
 from checkers_bot_tournament.game_result import GameResult, Result
 
+
 @dataclass
 class GameResultStat:
     white_wins: int = 0
@@ -25,15 +26,12 @@ SCALE = 400
 
 class BotTracker:
     def __init__(self, bot: Bot, unique_bot_names: list[str]) -> None:
-        from checkers_bot_tournament.checkers_util import make_unique_bot_string
-        
         self.bot = bot
         self.rating: float = STARTING_ELO
         self.stats = GameResultStat()
         self.h2h_stats: dict[str, GameResultStat] = {
-            unique_bot_name: GameResultStat()
-            for unique_bot_name in unique_bot_names
-            }
+            unique_bot_name: GameResultStat() for unique_bot_name in unique_bot_names
+        }
 
         self.games_played = 0
 
@@ -56,6 +54,7 @@ class BotTracker:
 
     def register_game_result(self, game_result: GameResult):
         from checkers_bot_tournament.checkers_util import make_unique_bot_string
+
         unique_name = make_unique_bot_string(self.bot)
         white_score_lookup = {Result.WHITE: 1, Result.BLACK: 0, Result.DRAW: 0.5}
 

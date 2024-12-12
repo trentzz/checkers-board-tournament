@@ -114,7 +114,7 @@ def write_tournament_h2h_stats(bot_list: list[BotTracker], file: IO) -> None:
         line1 = f"{row_str:<{name_col_width}}"
         line2 = " " * name_col_width  # second line aligned under columns
 
-        for j, col_bot in enumerate(bot_list[1:]):
+        for j, col_bot in enumerate(bot_list[1:], start=1):
             if i == j:
                 # Diagonal: no self matches
                 cell_top = " " * 1 + "x" * (cell_width - 2) + " " * 1
@@ -159,7 +159,7 @@ def write_tournament_h2h_stats(bot_list: list[BotTracker], file: IO) -> None:
                         w_cr, d_cr, l_cr, col_bot.rating, row_bot.rating
                     )
 
-                    def float_to_inf(f: float) -> str:
+                    def float_to_str(f: float) -> str:
                         if f == inf:
                             return "∞"
                         elif f == -inf:
@@ -167,14 +167,14 @@ def write_tournament_h2h_stats(bot_list: list[BotTracker], file: IO) -> None:
                         else:
                             return str(round(f))
 
-                    perf_rc_str = float_to_inf(perf_rc)
-                    perf_cr_str = float_to_inf(perf_cr)
-                    diff_cr_str = float_to_inf(abs(diff_cr))
+                    perf_rc_str = float_to_str(perf_rc)
+                    perf_cr_str = float_to_str(perf_cr)
+                    diff_cr_str = float_to_str(abs(diff_cr))
 
                     # wdl-11----> id-8--->perf-9-->
                     # BA987654321_87654321987654321
                     # XXX/XXX/XXX [XX] PR:XXXX (+Δ)
-                    #  Δ(PR):±XXX [XX] PR:XXXX (+Δ)
+                    #      ±Δ=XXX [XX] PR:XXXX (-Δ)
                     # BA987654321_87654321987654321
                     # delta-11--> id-8--->perf-9-->
                     # ------- 29 characters ------>
@@ -191,7 +191,7 @@ def write_tournament_h2h_stats(bot_list: list[BotTracker], file: IO) -> None:
                         cell_top = "N/A".center(cell_width)
 
                     if perf_cr is not None and diff_cr is not None:
-                        delta_pr_str = f"Δ(PR):±{diff_cr_str}"
+                        delta_pr_str = f"Δ:±{diff_cr_str}"
                         col_bot_id_str = f"[{col_bot_id}] PR:"
                         perf_col_str = f"{perf_cr_str} ({'+' if diff_cr > 0 else '-'}Δ)"
 

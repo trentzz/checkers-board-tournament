@@ -4,6 +4,16 @@ from checkers_bot_tournament.bots.base_bot import Bot
 from checkers_bot_tournament.game_result import GameResult, Result
 
 
+class EloConfig:
+    STARTING_ELO = 1500.0
+    # Dynamic learning rate as per USCF: K = 800/(Ne + m),
+    # where Ne is effective number of games a player's rating is based on, and
+    # m the number of games the player completed in a tournament for rating consideration
+    STARTING_KFACTOR = 800.0
+    # Each multiple of scale rating difference is a 10x increase in expected score
+    SCALE = 400.0
+
+
 @dataclass
 class GameResultStat:
     white_wins: int = 0
@@ -20,7 +30,7 @@ class GameResultStat:
 
     @property
     def total_draws(self):
-        return self.white_draws + self.black_draw
+        return self.white_draws + self.black_draws
 
     @property
     def total_losses(self):
@@ -31,19 +41,10 @@ class GameResultStat:
         return self.total_wins + self.total_draws + self.total_losses
 
 
-STARTING_ELO = 1500
-# Dynamic learning rate as per USCF: K = 800/(Ne + m),
-# where Ne is effective number of games a player's rating is based on, and
-# m the number of games the player completed in a tournament for rating consideration
-
-# Each multiple of scale rating difference is a 10x increase in expected score
-SCALE = 400
-
-
 class BotTracker:
     def __init__(self, bot: Bot, unique_bot_names: list[str]) -> None:
         self.bot = bot
-        self.rating: float = STARTING_ELO
+        self.rating: float = EloConfig.STARTING_ELO
         self.stats = GameResultStat()
         self.h2h_stats: dict[str, GameResultStat] = {
             unique_bot_name: GameResultStat() for unique_bot_name in unique_bot_names
@@ -56,8 +57,8 @@ class BotTracker:
         self.tournament_scores: list[float] = []
 
     def calculate_ev(self, other: "BotTracker") -> float:
-        Qa = 10 ** (self.rating / SCALE)
-        Qb = 10 ** (other.rating / SCALE)
+        Qa = 10 ** (self.rating / EloConfig.SCALE)
+        Qb = 10 ** (other.rating / EloConfig.SCALE)
 
         Ea = Qa / (Qa + Qb)  # Ea + Eb = 1
         return Ea
@@ -128,8 +129,8 @@ class BotTracker:
         total_ev = sum(self.tournament_evs)
         total_score = sum(self.tournament_scores)
 
-        K_FACTOR = 800 / (self.games_played + tournament_games_played)
-        self.rating += K_FACTOR * (total_score - total_ev)
+        K = EloConfig.STARTING_KFACTOR / (self.games_played + tournament_games_played)
+        self.rating += K * (total_score - total_ev)
 
         self.games_played += tournament_games_played
         self.tournament_evs = []

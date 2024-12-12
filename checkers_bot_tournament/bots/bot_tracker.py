@@ -14,6 +14,22 @@ class GameResultStat:
     black_draws: int = 0
     black_losses: int = 0
 
+    @property
+    def total_wins(self):
+        return self.white_wins + self.black_wins
+
+    @property
+    def total_draws(self):
+        return self.white_draws + self.black_draw
+
+    @property
+    def total_losses(self):
+        return self.white_losses + self.black_losses
+
+    @property
+    def total_games(self):
+        return self.total_wins + self.total_draws + self.total_losses
+
 
 STARTING_ELO = 1500
 # Dynamic learning rate as per USCF: K = 800/(Ne + m),

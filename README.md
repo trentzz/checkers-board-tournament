@@ -81,7 +81,7 @@ poetry run checkers RandomBot RandomBot FirstMover --mode all --rounds 1 --verbo
 ### Interpreting the Result Summary
 The performance of each bot is displayed in `game_result_stats.py` in two ways.
 #### Percentage Scores
-Breaks down the coarse-grain W/D/L stats for each bot as the White and Black sides as well as overall:
+Each entry breaks down the coarse-grain W/D/L stats for each bot, separated by colour (White/Black/Overall):
 
 ```
 Game Statistics
@@ -100,7 +100,7 @@ Overall   22.5%   10.0%   67.5%   = 27.50%
 ```
 
 #### [Elo Ratings](https://en.wikipedia.org/wiki/Elo_rating_system)
-update throughout the tournament and accounts for both the game outcome and the strength of the opponent. Additionally, a Head-to-Head matrix is printed out which allows you to compare any two bots against each other. The [performance ratings](https://en.wikipedia.org/wiki/Performance_rating_(chess)) in any pairing are displayed, measuring what level of strength the bots played at against each other. At a glance of the (+Δ) or (-Δ) sign, you can see which bots over- or under-performed compared to their Elo rating (Δ). These performance ratings are calculated by the expectation of the Elo rating, given the opponent's rating and W/D/L result seen.
+Ratings update throughout the tournament, factoring in the opponent’s rating and the game outcome. A Head-to-Head (H2H) matrix shows how each bot performed against every other bot. [Performance ratings](https://en.wikipedia.org/wiki/Performance_rating_(chess)) (PRs) measure the level of strength the bots played relative to their Elo rating, with (+Δ) or (-Δ) showing over- or under-performance.
 
 ```
 Head-to-Head Statistics

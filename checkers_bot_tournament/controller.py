@@ -353,7 +353,7 @@ class Controller:
         and the score achieved, and shows the difference between that performance rating
         and the bot's own rating.
         """
-        from math import log10
+        from math import inf, log10
 
         file.write("Head-to-Head Statistics\n")
         file.write("=" * 100 + "\n\n")
@@ -371,12 +371,12 @@ class Controller:
 
         # Print top header row
         file.write(" " * name_col_width)  # empty space for the left top corner
-        for j in range(n):
+        for j in range(1, n):
             opp_bot = bots[j]
             opp_str = make_unique_bot_string(opp_bot)
             file.write(f"{opp_str} ({round(opp_bot.rating)})".center(cell_width))
         file.write("\n")
-        file.write("-" * (name_col_width + n * cell_width) + "\n")
+        file.write("-" * (name_col_width + (n - 1) * cell_width) + "\n")
 
         # Function to compute Performance Rating of player against a specific
         # opponent given both Elo ratings
@@ -406,15 +406,14 @@ class Controller:
             score = w + 0.5 * d
             p = score / total
             if p == 0:
-                # If never scored anything, p=0, D -> -infinity theoretically,
-                # but let's cap it:
-                D = -800.0
+                # If never scored anything, p=0, D -> -infinity.
+                D = -inf
             elif p == 1:
-                # If always won, p=1 means D -> +infinity. We'll just cap it:
-                D = 800.0
+                # If always won, p=1 means D -> +infinity.
+                D = inf
             else:
                 D = -400.0 * log10((1.0 / p) - 1.0)
-                # Again, bound D between -800 and 800
+                # Bound D between -800 and 800 if not inf
                 D = min(800.0, D)
                 D = max(-800.0, D)
 
@@ -433,19 +432,21 @@ class Controller:
             line1 = f"{row_str:<{name_col_width}}"
             line2 = " " * name_col_width  # second line aligned under columns
 
-            for j in range(n):
+            for j in range(1, n):
                 if i == j:
                     # Diagonal: no self matches
-                    cell_top = " " * 2 + "x" * (cell_width - 4) + " " * 2
-                    cell_bottom = " " * 2 + "x" * (cell_width - 4) + " " * 2
+                    cell_top = " " * 1 + "x" * (cell_width - 2) + " " * 1
+                    cell_bottom = " " * 1 + "x" * (cell_width - 2) + " " * 1
                 elif j < i:
                     # Lower half: leave blank
-                    cell_top = " " * 2 + "-" * (cell_width - 4) + " " * 2
-                    cell_bottom = " " * 2 + "-" * (cell_width - 4) + " " * 2
+                    cell_top = " " * 1 + "-" * (cell_width - 2) + " " * 1
+                    cell_bottom = " " * 1 + "-" * (cell_width - 2) + " " * 1
                 else:
                     # Top half: show stats
                     row_bot_name = make_unique_bot_string(row_bot)
+                    row_bot_id = row_bot.bot.bot_id
                     col_bot = bots[j]
+                    col_bot_id = col_bot.bot.bot_id
                     col_bot_name = make_unique_bot_string(col_bot)
 
                     # Row perspective stats: row_bot vs col_bot
@@ -460,8 +461,6 @@ class Controller:
                     d_cr = stat_col_vs_row.white_draws + stat_col_vs_row.black_draws
                     l_cr = stat_col_vs_row.white_losses + stat_col_vs_row.black_losses
 
-                    print(w_rc, d_rc, l_rc, w_cr, d_cr, l_cr)
-
                     if (w_rc + d_rc + l_rc) == 0:
                         # No games played between these bots
                         cell_top = "N/A".center(cell_width)
@@ -473,24 +472,51 @@ class Controller:
                             w_rc, d_rc, l_rc, row_bot.rating, col_bot.rating
                         )
 
+                        if perf_rc == inf:
+                            perf_rc_str = "∞"
+                        elif perf_rc == -inf:
+                            perf_rc_str = "-∞"
+                        else:
+                            perf_rc_str = round(perf_rc)
+
                         # From col bot perspective
                         perf_cr, diff_cr = compute_performance_rating(
                             w_cr, d_cr, l_cr, col_bot.rating, row_bot.rating
                         )
 
+                        if perf_cr == inf:
+                            perf_cr_str = "∞"
+                        elif perf_cr == -inf:
+                            perf_cr_str = "-∞"
+                        else:
+                            perf_cr_str = round(perf_cr)
+
+                        if diff_cr == inf:
+                            diff_cr_str = "∞"
+                        elif diff_cr == -inf:
+                            diff_cr_str = "-∞"
+                        else:
+                            diff_cr_str = round(abs(diff_cr))
+
                         if perf_rc is not None and diff_rc is not None:
                             wdl_str = f"{w_rc}/{d_rc}/{l_rc}"
-                            perf_str_row = f"PR={round(perf_rc)} (Δ={round(diff_rc):+})"
+                            row_bot_id_str = f"[{row_bot_id}] PR:"
+                            perf_row_str = f"{perf_rc_str} ({'+' if diff_rc > 0 else '-'}Δ)"
                             # Calculate available space
                             wdl_formatted = f"{wdl_str:>11}"
-                            perf_formatted_row = f"{perf_str_row:<17}"
-                            cell_top = f"{wdl_formatted}  {perf_formatted_row}".ljust(cell_width)
+                            perf_formatted_row = f"{row_bot_id_str:>8}{perf_row_str:>9}"
+                            cell_top = f"{wdl_formatted} {perf_formatted_row}".ljust(cell_width)
                         else:
                             cell_top = "N/A".center(cell_width)
 
                         if perf_cr is not None and diff_cr is not None:
-                            perf_str_col = f"PR={round(perf_cr)} (Δ={round(diff_cr):+})"
-                            cell_bottom = f"{'':>11}  {perf_str_col:<17}".ljust(cell_width)
+                            delta_pr_str = f"Δ(PR):±{diff_cr_str}"
+                            col_bot_id_str = f"[{col_bot_id}] PR:"
+                            perf_col_str = f"{perf_cr_str} ({'+' if diff_cr > 0 else '-'}Δ)"
+                            perf_formatted_row = f"{col_bot_id_str:>8}{perf_col_str:>9}"
+                            cell_bottom = f"{delta_pr_str:>11} {perf_formatted_row}".ljust(
+                                cell_width
+                            )
                         else:
                             cell_bottom = "N/A".center(cell_width)
 
@@ -499,9 +525,9 @@ class Controller:
 
             # Print the two lines for this row
             file.write(line1 + "\n")
-            file.write(line2 + "\n")
+            file.write(line2 + "\n" * 2)
 
-        file.write("\n" + "=" * 100 + "\n\n")
+        file.write("=" * 100 + "\n\n")
 
     def _write_tournament_results(self) -> None:
         assert self.game_results_folder is not None

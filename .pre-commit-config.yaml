@@ -7,9 +7,12 @@ repos:
         language: system
         types: [python]
         stages: [pre-commit, pre-push]
+        pass_filenames: false  # Prevents passing file arguments
+
       - id: ruff-check
         name: Ruff Check
         entry: poetry run poe check
         language: system
         types: [python]
         stages: [pre-commit, pre-push]
+        pass_filenames: false  # Prevents passing file arguments

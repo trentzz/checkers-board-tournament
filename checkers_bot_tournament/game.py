@@ -1,5 +1,5 @@
 import copy
-from typing import Optional, Tuple  # , overload
+from typing import Optional, Tuple, overload
 
 from checkers_bot_tournament.board import Board
 from checkers_bot_tournament.bots.bot_tracker import BotTracker
@@ -7,6 +7,7 @@ from checkers_bot_tournament.checkers_util import make_unique_bot_string
 from checkers_bot_tournament.game_result import GameResult, Result
 from checkers_bot_tournament.move import Move
 from checkers_bot_tournament.piece import Colour
+from checkers_bot_tournament.play_move_info import PlayMoveInfo
 
 AUTO_DRAW_MOVECOUNT = 50 * 2
 
@@ -24,6 +25,10 @@ class Game:
     ):
         self.white = white
         self.black = black
+
+        self.white.reset_bot()
+        self.black.reset_bot()
+
         self.board = board
         self.game_id = game_id
         self.game_round = game_round
@@ -44,7 +49,8 @@ class Game:
         self.black_num_captures = 0
 
         self.game_result: Optional[GameResult] = None
-        self.moves_string = ""  # if verbose else None
+        self.moves_string: str = ""  # if verbose else None
+        self.move_history: list[Move] = []
 
         if self.pdn:
             self.import_pdn(self.pdn)
@@ -87,38 +93,38 @@ class Game:
             self.move_number += 1
             self.swap_turn()
 
-    # @overload
-    # def export_pdn(self, filename: str) -> None: ...
+    @overload
+    def export_pdn(self, filename: str) -> None: ...
 
-    # @overload
-    # def export_pdn(self) -> str: ...
+    @overload
+    def export_pdn(self) -> str: ...
 
-    # def export_pdn(self, filename: Optional[str] = None) -> None | str:
-    #     """
-    #     Exports the move history to a PDN file or as a string in PDN format.
+    def export_pdn(self, filename: Optional[str] = None) -> None | str:
+        """
+        Exports the move history to a PDN file or as a string in PDN format.
 
-    #     If a filename is provided, the PDN content is written to the file.
-    #     If no filename is provided, the PDN content is returned as a string.
-    #     """
-    #     pdn_moves = []
+        If a filename is provided, the PDN content is written to the file.
+        If no filename is provided, the PDN content is returned as a string.
+        """
+        pdn_moves = []
 
-    #     for move in self.board.get_move_history():
-    #         start = self._coordinates_to_pdn(move.start)
-    #         end = self._coordinates_to_pdn(move.end)
-    #         if move.removed:
-    #             pdn_move = f"{start}x{end}"
-    #         else:
-    #             pdn_move = f"{start}-{end}"
-    #         pdn_moves.append(pdn_move)
+        for move in self.move_history:
+            start = self._coordinates_to_pdn(move.start)
+            end = self._coordinates_to_pdn(move.end)
+            if move.removed:
+                pdn_move = f"{start}x{end}"
+            else:
+                pdn_move = f"{start}-{end}"
+            pdn_moves.append(pdn_move)
 
-    #     pdn_content = " ".join(pdn_moves)
+        pdn_content = " ".join(pdn_moves)
 
-    #     if filename is not None:
-    #         with open(filename, "w", encoding="utf-8") as file:
-    #             file.write(pdn_content)
-    #         return None
-    #     else:
-    #         return pdn_content
+        if filename is not None:
+            with open(filename, "w", encoding="utf-8") as file:
+                file.write(pdn_content)
+            return None
+        else:
+            return pdn_content
 
     def _pdn_to_coordinates(self, pdn: str) -> Tuple[int, int]:
         """Converts a PDN square number to a (row, col) coordinate."""
@@ -163,13 +169,26 @@ class Game:
         #         return future.result(timeout=10)
         #     except TimeoutError:
         #         !!!
-        move_idx = bot.play_move(copy.deepcopy(self.board), self.current_turn, copy.copy(move_list))
+        move_idx = bot.play_move(
+            PlayMoveInfo(
+                board=copy.deepcopy(self.board),
+                colour=self.current_turn,
+                move_list=copy.copy(move_list),
+                move_history=copy.copy(self.move_history),
+                last_action_move=self.last_action_move,
+            )
+        )
+
         if move_idx < 0 or move_idx >= len(move_list):
             bot_string = make_unique_bot_string(bot.bot_id, bot.get_name())
             raise RuntimeError(f"bot: {bot_string} has played an invalid move")
 
         move = move_list[move_idx]
+
+        self.move_history.append(move)
+
         capture, promotion = self.board.move_piece(move)
+
         if capture or promotion:
             # Reset action move, since capture or promotion occured
             self.last_action_move = self.move_number

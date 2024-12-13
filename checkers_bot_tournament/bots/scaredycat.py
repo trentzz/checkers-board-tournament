@@ -1,9 +1,8 @@
 import copy
 
-from checkers_bot_tournament.board import Board
 from checkers_bot_tournament.bots.base_bot import Bot
-from checkers_bot_tournament.move import Move
 from checkers_bot_tournament.piece import Colour
+from checkers_bot_tournament.play_move_info import PlayMoveInfo
 
 
 class ScaredyCat(Bot):
@@ -11,7 +10,11 @@ class ScaredyCat(Bot):
     Maximise the length of my opponent's move list (unless I can win)
     """
 
-    def play_move(self, board: Board, colour: Colour, move_list: list[Move]) -> int:
+    def play_move(self, info: PlayMoveInfo) -> int:
+        colour = info.colour
+        move_list = info.move_list
+        board = info.board
+
         opp_colour = Colour.BLACK if colour == Colour.WHITE else Colour.WHITE
 
         scores1: list[tuple[int, int]] = []

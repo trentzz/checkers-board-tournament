@@ -15,8 +15,6 @@ class Board:
 
         self.grid: Grid = board_start_builder.build()
 
-        # self.move_history: list[Move] = []
-
     def move_piece(self, move: Move) -> Tuple[bool, bool]:
         """
         Assume move is valid
@@ -33,9 +31,6 @@ class Board:
         self.grid[start_row][start_col] = None
         self.grid[end_row][end_col] = piece
         piece.position = move.end
-
-        # Add move to move_history
-        # self.move_history.append(move)
 
         capture = False
         promotion = False
@@ -123,9 +118,6 @@ class Board:
         """Return the piece at a specific position."""
         row, col = position
         return self.grid[row][col] if 0 <= row < self.size and 0 <= col < self.size else None
-
-    def get_move_history(self) -> list[Move]:
-        return []
 
     def display_cell(self, cell: Optional[Piece], x: int, y: int) -> str:
         if not cell:

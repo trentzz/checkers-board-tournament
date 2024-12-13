@@ -267,7 +267,7 @@ class Controller:
 
                 if self.export_pdn:
                     game_result_pdn_path = os.path.join(
-                        self.game_results_folder, f"game_{game_result}.pdn"
+                        self.game_results_folder, f"game_{game_result.game_id}.pdn"
                     )
                     with open(game_result_pdn_path, "w") as pdn_file:
                         pdn_file.write(game_result.moves_pdn)

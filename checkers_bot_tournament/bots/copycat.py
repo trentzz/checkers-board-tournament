@@ -34,14 +34,13 @@ class CopyCat(Bot):
         return Move(mirrored_start, mirrored_end, mirrored_removed)
 
     def play_move(self, board: Board, colour: Colour, move_list: list[Move]) -> int:
-        move_history = board.get_move_history()
+        previous_move = board.get_previous_move()
 
         # If move history is empty i.e. first move, pick a random move
-        if not move_history:
+        if not previous_move:
             return randint(0, len(move_list) - 1)
 
-        prev_move = move_history[-1]
-        mirror_move = self.get_mirror_move(board, prev_move)
+        mirror_move = self.get_mirror_move(board, previous_move)
 
         # Return the index of the mirrored move if it's valid, otherwise pick a random move
         if mirror_move in move_list:

@@ -44,7 +44,8 @@ class Game:
         self.black_num_captures = 0
 
         self.game_result: Optional[GameResult] = None
-        self.moves_string = ""  # if verbose else None
+        self.moves_string: str = ""  # if verbose else None
+        self.move_history: list[Move] = []
 
         if self.pdn:
             self.import_pdn(self.pdn)
@@ -102,7 +103,7 @@ class Game:
         """
         pdn_moves = []
 
-        for move in self.board.get_move_history():
+        for move in self.move_history:
             start = self._coordinates_to_pdn(move.start)
             end = self._coordinates_to_pdn(move.end)
             if move.removed:
@@ -163,13 +164,19 @@ class Game:
         #         return future.result(timeout=10)
         #     except TimeoutError:
         #         !!!
-        move_idx = bot.play_move(copy.deepcopy(self.board), self.current_turn, copy.copy(move_list))
+        move_idx = bot.play_move_wrapper(
+            copy.deepcopy(self.board), self.current_turn, copy.copy(move_list)
+        )
         if move_idx < 0 or move_idx >= len(move_list):
             bot_string = make_unique_bot_string(bot.bot_id, bot.get_name())
             raise RuntimeError(f"bot: {bot_string} has played an invalid move")
 
         move = move_list[move_idx]
+
+        self.move_history.append(move)
+
         capture, promotion = self.board.move_piece(move)
+
         if capture or promotion:
             # Reset action move, since capture or promotion occured
             self.last_action_move = self.move_number

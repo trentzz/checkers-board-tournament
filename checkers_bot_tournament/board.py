@@ -15,8 +15,6 @@ class Board:
 
         self.grid: Grid = board_start_builder.build()
 
-        self.move_history: list[Move] = []
-
     def move_piece(self, move: Move) -> Tuple[bool, bool]:
         """
         Assume move is valid
@@ -33,9 +31,6 @@ class Board:
         self.grid[start_row][start_col] = None
         self.grid[end_row][end_col] = piece
         piece.position = move.end
-
-        # Update move history
-        self.move_history.append(move)
 
         capture = False
         promotion = False

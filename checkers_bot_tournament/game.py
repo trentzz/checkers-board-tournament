@@ -7,6 +7,7 @@ from checkers_bot_tournament.checkers_util import make_unique_bot_string
 from checkers_bot_tournament.game_result import GameResult, Result
 from checkers_bot_tournament.move import Move
 from checkers_bot_tournament.piece import Colour
+from checkers_bot_tournament.play_move_info import PlayMoveInfo
 
 AUTO_DRAW_MOVECOUNT = 50 * 2
 
@@ -49,6 +50,7 @@ class Game:
 
         self.game_result: Optional[GameResult] = None
         self.moves_string: str = ""  # if verbose else None
+        self.move_history: list[Move] = []
 
         if self.pdn:
             self.import_pdn(self.pdn)
@@ -106,7 +108,7 @@ class Game:
         """
         pdn_moves = []
 
-        for move in self.board.move_history:
+        for move in self.move_history:
             start = self._coordinates_to_pdn(move.start)
             end = self._coordinates_to_pdn(move.end)
             if move.removed:
@@ -167,13 +169,23 @@ class Game:
         #         return future.result(timeout=10)
         #     except TimeoutError:
         #         !!!
-        move_idx = bot.play_move(copy.copy(self.board), self.current_turn, copy.copy(move_list))
+        move_idx = bot.play_move(
+            PlayMoveInfo(
+                board=copy.deepcopy(self.board),
+                colour=self.current_turn,
+                move_list=copy.copy(move_list),
+                move_history=copy.copy(self.move_history),
+                last_action_move=self.last_action_move,
+            )
+        )
 
         if move_idx < 0 or move_idx >= len(move_list):
             bot_string = make_unique_bot_string(bot.bot_id, bot.get_name())
             raise RuntimeError(f"bot: {bot_string} has played an invalid move")
 
         move = move_list[move_idx]
+
+        self.move_history.append(move)
 
         capture, promotion = self.board.move_piece(move)
 

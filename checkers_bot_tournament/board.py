@@ -15,7 +15,7 @@ class Board:
 
         self.grid: Grid = board_start_builder.build()
 
-        self.move_history: list[Move] = []
+        # self.move_history: list[Move] = []
 
     def move_piece(self, move: Move) -> Tuple[bool, bool]:
         """
@@ -35,7 +35,7 @@ class Board:
         piece.position = move.end
 
         # Add move to move_history
-        self.move_history.append(move)
+        # self.move_history.append(move)
 
         capture = False
         promotion = False
@@ -125,7 +125,7 @@ class Board:
         return self.grid[row][col] if 0 <= row < self.size and 0 <= col < self.size else None
 
     def get_move_history(self) -> list[Move]:
-        return self.move_history
+        return []
 
     def display_cell(self, cell: Optional[Piece], x: int, y: int) -> str:
         if not cell:

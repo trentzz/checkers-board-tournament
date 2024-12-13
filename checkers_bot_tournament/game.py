@@ -1,5 +1,5 @@
 import copy
-from typing import Optional, Tuple, overload
+from typing import Optional, Tuple  # , overload
 
 from checkers_bot_tournament.board import Board
 from checkers_bot_tournament.bots.bot_tracker import BotTracker
@@ -87,38 +87,38 @@ class Game:
             self.move_number += 1
             self.swap_turn()
 
-    @overload
-    def export_pdn(self, filename: str) -> None: ...
+    # @overload
+    # def export_pdn(self, filename: str) -> None: ...
 
-    @overload
-    def export_pdn(self) -> str: ...
+    # @overload
+    # def export_pdn(self) -> str: ...
 
-    def export_pdn(self, filename: Optional[str] = None) -> None | str:
-        """
-        Exports the move history to a PDN file or as a string in PDN format.
+    # def export_pdn(self, filename: Optional[str] = None) -> None | str:
+    #     """
+    #     Exports the move history to a PDN file or as a string in PDN format.
 
-        If a filename is provided, the PDN content is written to the file.
-        If no filename is provided, the PDN content is returned as a string.
-        """
-        pdn_moves = []
+    #     If a filename is provided, the PDN content is written to the file.
+    #     If no filename is provided, the PDN content is returned as a string.
+    #     """
+    #     pdn_moves = []
 
-        for move in self.board.get_move_history():
-            start = self._coordinates_to_pdn(move.start)
-            end = self._coordinates_to_pdn(move.end)
-            if move.removed:
-                pdn_move = f"{start}x{end}"
-            else:
-                pdn_move = f"{start}-{end}"
-            pdn_moves.append(pdn_move)
+    #     for move in self.board.get_move_history():
+    #         start = self._coordinates_to_pdn(move.start)
+    #         end = self._coordinates_to_pdn(move.end)
+    #         if move.removed:
+    #             pdn_move = f"{start}x{end}"
+    #         else:
+    #             pdn_move = f"{start}-{end}"
+    #         pdn_moves.append(pdn_move)
 
-        pdn_content = " ".join(pdn_moves)
+    #     pdn_content = " ".join(pdn_moves)
 
-        if filename is not None:
-            with open(filename, "w", encoding="utf-8") as file:
-                file.write(pdn_content)
-            return None
-        else:
-            return pdn_content
+    #     if filename is not None:
+    #         with open(filename, "w", encoding="utf-8") as file:
+    #             file.write(pdn_content)
+    #         return None
+    #     else:
+    #         return pdn_content
 
     def _pdn_to_coordinates(self, pdn: str) -> Tuple[int, int]:
         """Converts a PDN square number to a (row, col) coordinate."""
@@ -234,7 +234,7 @@ class Game:
             black_num_captures=self.black_num_captures,
             num_moves=self.move_number,
             moves=self.moves_string,
-            moves_pdn=self.export_pdn(),
+            moves_pdn="",
         )
         return self.game_result
 

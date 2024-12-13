@@ -1,6 +1,10 @@
 import os
+import time
 from dataclasses import dataclass
 from datetime import datetime
+from multiprocessing import Pool
+from queue import Queue
+from threading import Thread
 from typing import IO, Dict, Optional, Type
 
 from checkers_bot_tournament.board import Board
@@ -90,6 +94,8 @@ class Controller:
         self.game_results: list[list[GameResult]] = [[] for _ in range(rounds)]
         self.game_id_counter: int = 0
         self.game_results_folder: Optional[str] = None
+        self.write_queue: Queue[Optional[list[GameResult]]] = Queue()
+        self.writer_thread = Thread(target=self._writer_worker, daemon=True)
 
         self._init_game_schedule()
 
@@ -215,7 +221,9 @@ class Controller:
 
     def run(self) -> None:
         self._create_timestamped_folder()
+        self.writer_thread.start()
         for rnd in range(self.rounds):
+            t0 = time.time()
             for game in self.games[rnd]:
                 ev_white = game.white.calculate_ev(game.black)
                 ev_black = 1 - ev_white
@@ -225,11 +233,14 @@ class Controller:
                 game.white.register_ev(ev_white)
                 game.black.register_ev(ev_black)
 
-            for game in self.games[rnd]:
-                game_result = game.run()
-                self.game_results[rnd].append(game_result)
+            with Pool() as pool:
+                self.game_results[rnd] = pool.map(Game.run, self.games[rnd])
+            # for game in self.games[rnd]:
+            #     game_result = game.run()
+            #     self.game_results[rnd].append(game_result)
 
-            self._write_game_results(self.game_results[rnd])
+            # self._write_game_results(self.game_results[rnd])
+            self.write_queue.put(self.game_results[rnd])
 
             # Calculate Elo at the end of all matches in a round
             for game, game_result in zip(self.games[rnd], self.game_results[rnd]):
@@ -239,12 +250,33 @@ class Controller:
             for bot in self.bot_list:
                 bot.update_rating()
 
+            t1 = time.time()
             if self.verbose:
-                print(f"Round {rnd} completed")
+                print(f"Round {rnd} completed in {round(t1-t0, 1)} seconds")
 
         if self.verbose:
             print("Tournament completed, writing stats")
+
+        # Wait until all write tasks are completed
+        self.write_queue.join()
+        # Enqueue the sentinel to signal the writer thread to exit
+        self.write_queue.put(None)
+        self.writer_thread.join()
+
         self._write_tournament_results()
+
+    def _writer_worker(self):
+        """
+        Worker thread that continuously listens to the write_queue and writes game results.
+        """
+        while True:
+            game_results = self.write_queue.get()
+            if game_results is None:
+                # Sentinel received, exit the thread
+                self.write_queue.task_done()
+                break
+            self._write_game_results(game_results)
+            self.write_queue.task_done()
 
     def _write_game_result_summary(self, file: IO, game_result: GameResult) -> None:
         file.write(str(game_result))

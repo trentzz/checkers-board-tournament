@@ -64,7 +64,7 @@ class Game:
 
         moves = pdn_content.split()  # Assumes moves are space-separated
 
-        for move in moves:
+        for idx, move in enumerate(moves):
             if "-" in move:  # Regular move
                 start, end = move.split("-")
             elif "x" in move:  # Capture move
@@ -78,8 +78,24 @@ class Game:
 
             move_obj = Move(start_pos, end_pos, removed_pos)
 
-            if not self.board.is_valid_move(self.current_turn, move_obj):
-                raise RuntimeError(f"Invalid move in import_pdn: {move}")
+            # Check if the first move is valid for white or black and set
+            # current_turn accordingly
+            if idx == 0:
+                assert not self.move_history
+
+                if self.board.is_valid_move(Colour.WHITE, move_obj):
+                    self.current_turn = Colour.WHITE
+                elif self.board.is_valid_move(Colour.BLACK, move_obj):
+                    self.current_turn = Colour.BLACK
+                else:
+                    raise RuntimeError(
+                        f"First move in import_pdn is invalid for both white and black: {move}"
+                    )
+            else:
+                if not self.board.is_valid_move(self.current_turn, move_obj):
+                    raise RuntimeError(
+                        f"Invalid move in import_pdn for colour: {str(self.current_turn)}, turn: {str(len(self.move_history))}, move: {move}"
+                    )
 
             capture, promotion = self.board.move_piece(move_obj)
             if capture or promotion:

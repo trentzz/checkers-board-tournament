@@ -2,7 +2,8 @@ import pytest
 
 from checkers_bot_tournament.board import Board
 from checkers_bot_tournament.board_start_builder import DefaultBSB
-from checkers_bot_tournament.bots.base_bot import Bot
+from checkers_bot_tournament.bots.random_bot import RandomBot
+from checkers_bot_tournament.bots.bot_tracker import BotTracker
 from checkers_bot_tournament.game import Game
 from checkers_bot_tournament.move import Move
 
@@ -26,7 +27,15 @@ def test_import_pdn_from_string(temp_pdn_file, sample_pdn):
     temp_pdn_file.write_text(sample_pdn)
 
     # Create a board and import the PDN
-    game = Game(Bot(0), Bot(0), Board(DefaultBSB()), 0, 0, False, temp_pdn_file)
+    game = Game(
+        BotTracker(RandomBot, 0, []),
+        BotTracker(RandomBot, 0, []),
+        Board(DefaultBSB()),
+        0,
+        0,
+        False,
+        temp_pdn_file,
+    )
 
     # Expected move list (calculated manually)
     expected_moves = [
@@ -42,20 +51,62 @@ def test_import_pdn_from_string(temp_pdn_file, sample_pdn):
         Move((3, 0), (5, 2), (4, 1)),  # 13x22 (jump move)
     ]
 
-    print(game.board.move_history)
+    assert len(game.move_history) == len(expected_moves)
 
-    assert len(game.board.move_history) == len(expected_moves)
-
-    for move, expected in zip(game.board.move_history, expected_moves):
+    for move, expected in zip(game.move_history, expected_moves):
         assert move.start == expected.start
         assert move.end == expected.end
         assert move.removed == expected.removed
 
 
+def test_import_pdn_black_move_first():
+    game = Game(
+        BotTracker(RandomBot, 0, []),
+        BotTracker(RandomBot, 0, []),
+        Board(DefaultBSB()),
+        0,
+        0,
+        False,
+        "tests/pdns/black_first_move.pdn",
+    )
+
+    print(game.move_history)
+
+    expected_moves = [Move((2, 3), (3, 4), None)]
+
+    assert len(game.move_history) == len(expected_moves)
+
+    for move, expected in zip(game.move_history, expected_moves):
+        assert move.start == expected.start
+        assert move.end == expected.end
+        assert move.removed == expected.removed
+
+
+def test_import_invalid_pdn():
+    with pytest.raises(RuntimeError):
+        Game(
+            BotTracker(RandomBot, 0, []),
+            BotTracker(RandomBot, 0, []),
+            Board(DefaultBSB()),
+            0,
+            0,
+            False,
+            "tests/pdns/invalid_moves.pdn",
+        )
+
+
 def test_export_pdn(temp_pdn_file):
     """Test that the board's move history is correctly exported to a PDN file."""
 
-    game = Game(Bot(0), Bot(0), Board(DefaultBSB()), 0, 0, False, None)
+    game = Game(
+        BotTracker(RandomBot, 0, []),
+        BotTracker(RandomBot, 0, []),
+        Board(DefaultBSB()),
+        0,
+        0,
+        False,
+        None,
+    )
     moves = [
         Move((5, 2), (4, 1), None),  # 22-17
         Move((2, 5), (3, 4), None),  # 11-15
@@ -70,7 +121,7 @@ def test_export_pdn(temp_pdn_file):
     ]
 
     for move in moves:
-        game.board.move_piece(move)
+        game.move_piece(move)
 
     # Export the moves to a file
     game.export_pdn(temp_pdn_file)
@@ -88,7 +139,15 @@ def test_import_export_consistency(temp_pdn_file, sample_pdn):
     temp_pdn_file.write_text(sample_pdn)
 
     # Create a board, import the PDN, and export it to a new file
-    game = Game(Bot(0), Bot(0), Board(DefaultBSB()), 0, 0, False, None)
+    game = Game(
+        BotTracker(RandomBot, 0, []),
+        BotTracker(RandomBot, 0, []),
+        Board(DefaultBSB()),
+        0,
+        0,
+        False,
+        None,
+    )
     game.import_pdn(temp_pdn_file)
 
     # Export to a new PDN file

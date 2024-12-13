@@ -97,7 +97,8 @@ class Game:
                         f"Invalid move in import_pdn for colour: {str(self.current_turn)}, turn: {str(len(self.move_history))}, move: {move}"
                     )
 
-            capture, promotion = self.board.move_piece(move_obj)
+            capture, promotion = self.move_piece(move_obj)
+
             if capture or promotion:
                 # Reset action move, since capture or promotion occured
                 self.last_action_move = self.move_number
@@ -108,6 +109,14 @@ class Game:
 
             self.move_number += 1
             self.swap_turn()
+
+    def move_piece(self, move: Move) -> Tuple[bool, bool]:
+        """
+        Only used by import_pdn and for testing purposes.
+        """
+        # Update move history
+        self.move_history.append(move)
+        return self.board.move_piece(move)
 
     @overload
     def export_pdn(self, filename: str) -> None: ...

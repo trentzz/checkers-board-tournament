@@ -6,7 +6,7 @@ class Colour(Enum):
     WHITE = auto()
     BLACK = auto()
 
-    def get_opposite(self):
+    def get_opposite(self) -> "Colour":
         if self == Colour.WHITE:
             return Colour.BLACK
         elif self == Colour.BLACK:

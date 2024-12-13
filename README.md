@@ -78,6 +78,40 @@ Run 2 instances of `RandomBot` and 1 instance of `FirstBot` against each other.
 poetry run checkers RandomBot RandomBot FirstMover --mode all --rounds 1 --verbose --output-dir output
 ```
 
+### Interpreting the Result Summary
+The performance of each bot is displayed in `game_result_stats.py` in two ways.
+#### Percentage Scores
+Each entry breaks down the coarse-grain W/D/L stats for each bot, separated by colour (White/Black/Overall):
+
+```
+Game Statistics
+============================================================
+
+Bot Name: [0] RandomBot (1319)
+------------------------------------------------------------
+          Win     Draw    Loss    Overall Score
+White     3       4       13      
+Black     6       0       14      
+Overall   9       4       27      
+White     15.0%   20.0%   65.0%   = 25.00%
+Black     30.0%   0.0%    70.0%   = 30.00%
+Overall   22.5%   10.0%   67.5%   = 27.50%
+============================================================
+```
+
+#### [Elo Ratings](https://en.wikipedia.org/wiki/Elo_rating_system)
+Ratings update throughout the tournament, factoring in the opponent’s rating and the game outcome. A Head-to-Head (H2H) matrix shows how each bot performed against every other bot. [Performance ratings](https://en.wikipedia.org/wiki/Performance_rating_(chess)) (PRs) measure the level of strength the bots played relative to their Elo rating, with (+Δ) or (-Δ) showing over- or under-performance.
+
+```
+Head-to-Head Statistics
+==================================================================================
+
+                          [1] FirstMover (1309)          [2] GreedyCat (1658)      
+----------------------------------------------------------------------------------
+[0] RandomBot (1319)        3/2/5  [0] PR:1239 (-Δ)       2/0/8  [0] PR:1418 (+Δ) 
+                            Δ:±80  [1] PR:1390 (+Δ)       Δ:±98  [2] PR:1560 (-Δ) 
+```
+
 ## For Developers
 
 ### Adding your own bot
@@ -136,7 +170,7 @@ Not an exhaustive list:
 - If you have the option of capturing a piece, you're forced to (the `move_list` will only contain captures if a capture is available)
 - Conditions for a draw are:
   - Repeating the exact position 3 times
-  - 40 Moves without a capture or crowning
+  - 50 Moves without a capture or crowning
 
 ## Stuff and things
 

@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Type
 
 from checkers_bot_tournament.bots.base_bot import Bot
 from checkers_bot_tournament.game_result import GameResult, Result
@@ -42,8 +43,11 @@ class GameResultStat:
 
 
 class BotTracker:
-    def __init__(self, bot: Bot, unique_bot_names: list[str]) -> None:
-        self.bot = bot
+    def __init__(self, bot_type: Type[Bot], bot_id: int, unique_bot_names: list[str]) -> None:
+        self.bot_type = bot_type
+        self.bot_id = bot_id
+        self.bot: Bot = self.bot_type(self.bot_id)
+
         self.rating: float = EloConfig.STARTING_ELO
         self.stats = GameResultStat()
         self.h2h_stats: dict[str, GameResultStat] = {
@@ -135,3 +139,6 @@ class BotTracker:
         self.games_played += tournament_games_played
         self.tournament_evs = []
         self.tournament_scores = []
+
+    def reset_bot(self) -> None:
+        self.bot = self.bot_type(self.bot_id)

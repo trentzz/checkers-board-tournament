@@ -4,6 +4,7 @@ from checkers_bot_tournament.board import Board
 from checkers_bot_tournament.bots.base_bot import Bot
 from checkers_bot_tournament.move import Move
 from checkers_bot_tournament.piece import Colour
+from checkers_bot_tournament.play_move_info import PlayMoveInfo
 
 
 class GreedyCat(Bot):
@@ -18,7 +19,11 @@ class GreedyCat(Bot):
         self.man_value = 1
         self.king_value = 4
 
-    def play_move(self, board: Board, colour: Colour, move_list: list[Move]) -> int:
+    def play_move(self, info: PlayMoveInfo) -> int:
+        colour = info.colour
+        move_list = info.move_list
+        board = info.board
+
         # print(f"Ply {self.ply if colour == Colour.WHITE else self.ply + 1} as {colour}")
         opp_colour = Colour.BLACK if colour == Colour.WHITE else Colour.WHITE
 

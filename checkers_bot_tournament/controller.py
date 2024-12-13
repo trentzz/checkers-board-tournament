@@ -20,6 +20,7 @@ from checkers_bot_tournament.bots.bot_tracker import BotTracker
 from checkers_bot_tournament.bots.copycat import CopyCat
 from checkers_bot_tournament.bots.first_mover import FirstMover
 from checkers_bot_tournament.bots.greedycat import GreedyCat
+from checkers_bot_tournament.bots.malicious_bot import MaliciousBot
 from checkers_bot_tournament.bots.random_bot import RandomBot
 from checkers_bot_tournament.bots.scaredycat import ScaredyCat
 from checkers_bot_tournament.checkers_util import make_unique_bot_string
@@ -50,6 +51,7 @@ class Controller:
         "ScaredyCat": ScaredyCat,
         "GreedyCat": GreedyCat,
         "CopyCat": CopyCat,
+        "MaliciousBot": MaliciousBot,
     }
 
     board_start_builder_mapping: Dict[str, Type[BoardStartBuilder]] = {
@@ -120,7 +122,7 @@ class Controller:
         for idx, bot_name in idx_bot_names:
             bot_class = self.bot_mapping[bot_name]
             bot_list.append(
-                BotTracker(bot=bot_class(bot_id=idx), unique_bot_names=unique_bot_names)
+                BotTracker(bot_type=bot_class, bot_id=idx, unique_bot_names=unique_bot_names)
             )
 
         return bot_list
@@ -135,13 +137,15 @@ class Controller:
                 try:
                     # Special case: we set the bot id to -1 since the list starts at 0
                     # kinda hacky but uh :D
-                    unique_bot_names = list(map(lambda x: make_unique_bot_string(x), self.bot_list))
+                    unique_bot_names = list(map(make_unique_bot_string, self.bot_list))
                     bot_class = self.bot_mapping[self.bot_name]
                     hero_bot = BotTracker(
-                        bot=bot_class(bot_id=-1), unique_bot_names=unique_bot_names
+                        bot_type=bot_class, bot_id=-1, unique_bot_names=unique_bot_names
                     )
-                except KeyError:
-                    raise ValueError(f"bot name {self.bot_name} entered in CLI not recognised!")
+                except KeyError as _:
+                    raise ValueError(
+                        f"bot name {self.bot_name} entered in CLI not recognised!"
+                    ) from _
                 self._init_one_schedule(hero_bot)
             case _:
                 raise ValueError(f"mode value {self.mode} not recognised!")
@@ -299,7 +303,7 @@ class Controller:
 
                 if self.export_pdn:
                     game_result_pdn_path = os.path.join(
-                        self.game_results_folder, f"game_{game_result}.pdn"
+                        self.game_results_folder, f"game_{game_result.game_id}.pdn"
                     )
                     with open(game_result_pdn_path, "w") as pdn_file:
                         pdn_file.write(game_result.moves_pdn)

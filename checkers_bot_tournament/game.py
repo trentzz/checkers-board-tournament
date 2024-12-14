@@ -133,8 +133,7 @@ class Game:
             self.moves_string += f"Moved from {str(move.start)} to {str(move.end)}"
             if from_import:
                 self.moves_string += " (Book Move)"
-            self.moves_string += "\n"
-            self.moves_string += "\n" + self.board.display()
+            self.moves_string += "\n" + self.board.display() + "\n"
 
     @overload
     def export_pdn(self, filename: str) -> None: ...

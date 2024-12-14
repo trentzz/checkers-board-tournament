@@ -39,5 +39,6 @@ class ScaredyCat(Bot):
 
         return max_index1
 
-    def get_name(self) -> str:
+    @classmethod
+    def _get_name(cls) -> str:
         return "ScaredyCat"

@@ -10,5 +10,6 @@ class FirstMover(Bot):
     def play_move(self, info: PlayMoveInfo) -> int:
         return 0
 
-    def get_name(self) -> str:
+    @classmethod
+    def _get_name(cls) -> str:
         return "FirstMover"

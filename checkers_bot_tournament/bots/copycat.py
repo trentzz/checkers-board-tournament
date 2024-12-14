@@ -11,7 +11,8 @@ class CopyCat(Bot):
     Copies what the other bot does, otherwise just plays something random.
     """
 
-    def get_name(self) -> str:
+    @classmethod
+    def _get_name(cls) -> str:
         return "CopyCat"
 
     def get_mirror_move(self, board: Board, move: Move) -> Move:

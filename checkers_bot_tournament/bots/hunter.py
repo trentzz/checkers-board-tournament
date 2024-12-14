@@ -219,5 +219,6 @@ class Hunter(Bot):
 
         return material_score
 
-    def get_name(self) -> str:
+    @classmethod
+    def _get_name(cls) -> str:
         return "Hunter"

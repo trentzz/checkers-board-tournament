@@ -120,7 +120,7 @@ class Board:
 
                     for dr, dc in directions:
                         self.add_regular_move(moves, row, col, dr, dc)
-                        self.add_capture_move(moves, colour, row, col, directions)
+                    self.add_capture_move(moves, colour, row, col, directions)
 
         # Funny rule in checkers, if there is a capture move available, you MUST
         # take it, so here, if there are any capture moves, we filter to only

@@ -95,6 +95,19 @@ def test_import_invalid_pdn():
         )
 
 
+def test_import_complete_game_pdn():
+    with pytest.raises(RuntimeError):
+        Game(
+            BotTracker(RandomBot, 0, []),
+            BotTracker(RandomBot, 0, []),
+            Board(DefaultBSB()),
+            0,
+            0,
+            False,
+            "tests/pdns/complete_game.pdn",
+        )
+
+
 def test_export_pdn(temp_pdn_file):
     """Test that the board's move history is correctly exported to a PDN file."""
 

@@ -36,7 +36,6 @@ class Game:
         self.pdn = start_pdn
 
         self.current_turn = Colour.WHITE
-        self.move_number = 1
         self.is_first_move = True
 
         # There must be a capture or promotion within last 50 moves
@@ -54,6 +53,15 @@ class Game:
 
         if self.pdn:
             self.import_pdn(self.pdn)
+
+    @property
+    def move_number(self) -> int:
+        """
+        Querying move_number happens after a move is made, so move_number
+        represents the move number of the last recorded move in move_history
+        and NOT the move number of the next move.
+        """
+        return len(self.move_history)
 
     def import_pdn(self, filename: str) -> None:
         """
@@ -94,29 +102,31 @@ class Game:
             else:
                 if not self.board.is_valid_move(self.current_turn, move_obj):
                     raise RuntimeError(
-                        f"Invalid move in import_pdn for colour: {str(self.current_turn)}, turn: {str(len(self.move_history))}, move: {move}"
+                        f"Invalid move in import_pdn for colour: {str(self.current_turn)}, turn: {self.move_number + 1}, move: {move}"
                     )
 
-            capture, promotion = self.move_piece(move_obj)
-
-            if capture or promotion:
-                # Reset action move, since capture or promotion occured
-                self.last_action_move = self.move_number
-                if capture:
-                    self._record_capture()
-                if promotion:
-                    self._record_promotion()
-
-            self.move_number += 1
+            self.move_piece(move_obj)
             self.swap_turn()
 
-    def move_piece(self, move: Move) -> Tuple[bool, bool]:
+        # Check that the game has NOT ended at this point
+        if not self.board.get_move_list(self.current_turn):
+            raise RuntimeError(f"PDN game: {self.pdn} is already complete! Nothing for bots to do!")
+
+    def move_piece(self, move: Move) -> None:
         """
         Only used by import_pdn and for testing purposes.
         """
         # Update move history
         self.move_history.append(move)
-        return self.board.move_piece(move)
+        capture, promotion = self.board.move_piece(move)
+
+        if capture or promotion:
+            # Reset action move, since capture or promotion occured
+            self.last_action_move = self.move_number
+            if capture:
+                self._record_capture()
+            if promotion:
+                self._record_promotion()
 
     @overload
     def export_pdn(self, filename: str) -> None: ...
@@ -208,19 +218,9 @@ class Game:
             bot_string = make_unique_bot_string(bot.bot_id, bot.get_name())
             raise RuntimeError(f"bot: {bot_string} has played an invalid move")
 
-        move = move_list[move_idx]
+        move: Move = move_list[move_idx]
 
-        self.move_history.append(move)
-
-        capture, promotion = self.board.move_piece(move)
-
-        if capture or promotion:
-            # Reset action move, since capture or promotion occured
-            self.last_action_move = self.move_number
-            if capture:
-                self._record_capture()
-            if promotion:
-                self._record_promotion()
+        self.move_piece(move)
 
         if self.verbose:
             self.moves_string += f"Move {self.move_number}: {self.current_turn}'s turn\n"
@@ -237,7 +237,6 @@ class Game:
             # self.write_game_result(result)
             return result
 
-        self.move_number += 1
         return None
 
     def _record_capture(self) -> None:

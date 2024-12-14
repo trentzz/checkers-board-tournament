@@ -132,8 +132,8 @@ class Game:
 
         if self.verbose:
             eval_str = ""
-            if play_move_info:
-                eval_str = f". Bot's eval: {play_move_info.pos_eval}"
+            if play_move_info and play_move_info.pos_eval is not None:
+                eval_str = f". Bot's eval: {play_move_info.pos_eval:.2f}"
             self.moves_string += f"Move {self.move_number}: {self.current_turn}'s turn{eval_str}\n"
             self.moves_string += f"Moved from {str(move.start)} to {str(move.end)}"
             if from_import:
@@ -234,7 +234,7 @@ class Game:
 
         move: Move = move_list[move_idx]
 
-        self.move_piece(move)
+        self.move_piece(move, play_move_info=info)
 
         if self.move_number - self.last_action_move >= AUTO_DRAW_MOVECOUNT:
             result = Result.DRAW

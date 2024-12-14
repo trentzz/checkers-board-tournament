@@ -2,6 +2,7 @@ import copy
 from typing import Optional, Tuple, overload
 
 from checkers_bot_tournament.board import Board
+from checkers_bot_tournament.bots.base_bot import Bot
 from checkers_bot_tournament.bots.bot_tracker import BotTracker
 from checkers_bot_tournament.checkers_util import make_unique_bot_string
 from checkers_bot_tournament.game_result import GameResult, Result
@@ -9,25 +10,24 @@ from checkers_bot_tournament.move import Move
 from checkers_bot_tournament.piece import Colour
 from checkers_bot_tournament.play_move_info import PlayMoveInfo
 
-AUTO_DRAW_MOVECOUNT = 50 * 2
+AUTO_DRAW_MOVECOUNT = 40 * 2
 
 
 class Game:
     def __init__(
         self,
-        white: BotTracker,
-        black: BotTracker,
+        white_tracker: BotTracker,
+        black_tracker: BotTracker,
         board: Board,
         game_id: int,
         game_round: int,
         verbose: bool,
         start_pdn: Optional[str],
     ):
-        self.white = white
-        self.black = black
-
-        self.white.reset_bot()
-        self.black.reset_bot()
+        self.white_tracker = white_tracker
+        self.black_tracker = black_tracker
+        self.white_bot: Bot | None = None
+        self.black_bot: Bot | None = None
 
         self.board = board
         self.game_id = game_id
@@ -114,7 +114,9 @@ class Game:
         if not self.board.get_move_list(self.current_turn):
             raise RuntimeError(f"PDN game: {self.pdn} is already complete! Nothing for bots to do!")
 
-    def move_piece(self, move: Move, from_import: bool = False) -> None:
+    def move_piece(
+        self, move: Move, from_import: bool = False, play_move_info: Optional[PlayMoveInfo] = None
+    ) -> None:
         """
         Only used by import_pdn and for testing purposes.
         """
@@ -131,7 +133,10 @@ class Game:
                 self._record_promotion()
 
         if self.verbose:
-            self.moves_string += f"Move {self.move_number}: {self.current_turn}'s turn\n"
+            eval_str = ""
+            if play_move_info and play_move_info.pos_eval is not None:
+                eval_str = f". Bot's eval: {play_move_info.pos_eval:.2f}"
+            self.moves_string += f"Move {self.move_number}: {self.current_turn}'s turn{eval_str}\n"
             self.moves_string += f"Moved from {str(move.start)} to {str(move.end)}"
             if from_import:
                 self.moves_string += " (Book Move)"
@@ -195,7 +200,9 @@ class Game:
         return removed_row, removed_col
 
     def make_move(self) -> Optional[Result]:
-        bot = self.white.bot if self.current_turn == Colour.WHITE else self.black.bot
+        bot = self.white_bot if self.current_turn == Colour.WHITE else self.black_bot
+        assert bot
+
         move_list: list[Move] = self.board.get_move_list(self.current_turn)
 
         if len(move_list) == 0:
@@ -213,23 +220,23 @@ class Game:
         #         return future.result(timeout=10)
         #     except TimeoutError:
         #         !!!
-        move_idx = bot.play_move(
-            PlayMoveInfo(
-                board=copy.deepcopy(self.board),
-                colour=self.current_turn,
-                move_list=copy.copy(move_list),
-                move_history=copy.copy(self.move_history),
-                last_action_move=self.last_action_move,
-            )
+        info = PlayMoveInfo(
+            board=copy.deepcopy(self.board),
+            colour=self.current_turn,
+            move_list=copy.copy(move_list),
+            move_history=copy.copy(self.move_history),
+            last_action_move=self.last_action_move,
+            pos_eval=None,
         )
+        move_idx = bot.play_move(info)
 
         if move_idx < 0 or move_idx >= len(move_list):
-            bot_string = make_unique_bot_string(bot.bot_id, bot.get_name())
+            bot_string = make_unique_bot_string(bot.bot_id, bot._get_name())
             raise RuntimeError(f"bot: {bot_string} has played an invalid move")
 
         move: Move = move_list[move_idx]
 
-        self.move_piece(move)
+        self.move_piece(move, play_move_info=info)
 
         if self.move_number - self.last_action_move >= AUTO_DRAW_MOVECOUNT:
             result = Result.DRAW
@@ -256,6 +263,9 @@ class Game:
             self.black_kings_made += 1
 
     def run(self) -> GameResult:
+        self.white_bot = self.white_tracker.spawn_bot()
+        self.black_bot = self.black_tracker.spawn_bot()
+
         while True:
             # TODO: Implement chain moves (use is_first_move)
             result = self.make_move()
@@ -271,17 +281,17 @@ class Game:
             game_id=self.game_id,
             game_round=self.game_round,
             result=result,
-            white_name=make_unique_bot_string(self.white),
-            white_rating=round(self.white.rating),
+            white_name=make_unique_bot_string(self.white_tracker),
+            white_rating=round(self.white_tracker.rating),
             white_kings_made=self.white_kings_made,
             white_num_captures=self.white_num_captures,
-            black_name=make_unique_bot_string(self.black),
-            black_rating=round(self.black.rating),
+            black_name=make_unique_bot_string(self.black_tracker),
+            black_rating=round(self.black_tracker.rating),
             black_kings_made=self.black_kings_made,
             black_num_captures=self.black_num_captures,
             num_moves=self.move_number,
             moves=self.moves_string,
-            moves_pdn=self.export_pdn(),
+            moves_pdn="",
         )
         return self.game_result
 

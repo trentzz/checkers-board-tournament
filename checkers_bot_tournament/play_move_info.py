@@ -12,3 +12,5 @@ class PlayMoveInfo:
     move_list: list[Move]  # a list of allowable moves
     move_history: list[Move]  # history of the moves played in the game
     last_action_move: int  # last move which an action happened
+
+    pos_eval: float | None

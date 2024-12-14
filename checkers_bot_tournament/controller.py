@@ -1,7 +1,11 @@
 import os
+import time
 from dataclasses import dataclass
 from datetime import datetime
-from typing import IO, Dict, Optional, Type
+from multiprocessing import Pool
+from queue import Queue
+from threading import Thread
+from typing import IO, Dict, Optional, Type, TypeAlias
 
 from checkers_bot_tournament.board import Board
 from checkers_bot_tournament.board_start_builder import (
@@ -16,6 +20,7 @@ from checkers_bot_tournament.bots.bot_tracker import BotTracker
 from checkers_bot_tournament.bots.copycat import CopyCat
 from checkers_bot_tournament.bots.first_mover import FirstMover
 from checkers_bot_tournament.bots.greedycat import GreedyCat
+from checkers_bot_tournament.bots.hunter import Hunter
 from checkers_bot_tournament.bots.malicious_bot import MaliciousBot
 from checkers_bot_tournament.bots.random_bot import RandomBot
 from checkers_bot_tournament.bots.scaredycat import ScaredyCat
@@ -48,6 +53,7 @@ class Controller:
         "GreedyCat": GreedyCat,
         "CopyCat": CopyCat,
         "MaliciousBot": MaliciousBot,
+        "Hunter": Hunter,
     }
 
     board_start_builder_mapping: Dict[str, Type[BoardStartBuilder]] = {
@@ -92,6 +98,8 @@ class Controller:
         self.game_results: list[list[GameResult]] = [[] for _ in range(rounds)]
         self.game_id_counter: int = 0
         self.game_results_folder: Optional[str] = None
+        self.write_queue: Queue[tuple[list[GameResult], int] | None] = Queue()
+        self.writer_thread = Thread(target=self._writer_worker, daemon=True)
 
         self._init_game_schedule()
 
@@ -116,7 +124,7 @@ class Controller:
         for idx, bot_name in idx_bot_names:
             bot_class = self.bot_mapping[bot_name]
             bot_list.append(
-                BotTracker(bot_type=bot_class, bot_id=idx, unique_bot_names=unique_bot_names)
+                BotTracker(bot_class=bot_class, bot_id=idx, unique_bot_names=unique_bot_names)
             )
 
         return bot_list
@@ -134,7 +142,7 @@ class Controller:
                     unique_bot_names = list(map(make_unique_bot_string, self.bot_list))
                     bot_class = self.bot_mapping[self.bot_name]
                     hero_bot = BotTracker(
-                        bot_type=bot_class, bot_id=-1, unique_bot_names=unique_bot_names
+                        bot_class=bot_class, bot_id=-1, unique_bot_names=unique_bot_names
                     )
                 except KeyError as _:
                     raise ValueError(
@@ -219,50 +227,87 @@ class Controller:
 
     def run(self) -> None:
         self._create_timestamped_folder()
+        self.writer_thread.start()
         for rnd in range(self.rounds):
-            for game in self.games[rnd]:
-                ev_white = game.white.calculate_ev(game.black)
-                ev_black = 1 - ev_white
+            t0 = time.time()
 
-                # Sum of EV score for each player
-                # based on all games they will play in this tournaments
-                game.white.register_ev(ev_white)
-                game.black.register_ev(ev_black)
+            with Pool() as pool:
+                self.game_results[rnd] = pool.map(Game.run, self.games[rnd])
+            # for game in self.games[rnd]:
+            #     game_result = game.run()
+            #     self.game_results[rnd].append(game_result)
 
-            for game in self.games[rnd]:
-                game_result = game.run()
-                self.game_results[rnd].append(game_result)
-
-            self._write_game_results(self.game_results[rnd])
+            # Add task of recording all games in the round to writer thread
+            self.write_queue.put((self.game_results[rnd], rnd))
+            # self._write_game_results(self.game_results[rnd])
 
             # Calculate Elo at the end of all matches in a round
             for game, game_result in zip(self.games[rnd], self.game_results[rnd]):
-                game.white.register_game_result(game_result)
-                game.black.register_game_result(game_result)
+                ev_white = game.white_tracker.calculate_ev(game.black_tracker)
+                ev_black = 1 - ev_white
+
+                game.white_tracker.register_ev(ev_white)
+                game.black_tracker.register_ev(ev_black)
+
+                game.white_tracker.register_game_result(game_result)
+                game.black_tracker.register_game_result(game_result)
 
             for bot in self.bot_list:
                 bot.update_rating()
 
+            t1 = time.time()
             if self.verbose:
-                print(f"Round {rnd} completed")
+                print(f"Tournament {rnd} completed in {round(t1-t0, 1)} seconds")
 
         if self.verbose:
-            print("Tournament completed, writing stats")
+            print("All games completed, writing summary stats...")
+
+        # Wait until all write tasks are completed
+        self.write_queue.join()
+        # Enqueue the sentinel to signal the writer thread to exit
+        self.write_queue.put(None)
+        self.writer_thread.join()
+
         self._write_tournament_results()
+
+    def _writer_worker(self) -> None:
+        """
+        Worker thread that continuously listens to the write_queue and writes game results.
+        """
+        while True:
+            tup = self.write_queue.get()
+            if tup is None:
+                # Sentinel received, exit the thread
+                self.write_queue.task_done()
+                break
+            game_results, rnd = tup
+            self._write_game_results(game_results, rnd)
+            self.write_queue.task_done()
 
     def _write_game_result_summary(self, file: IO, game_result: GameResult) -> None:
         file.write(str(game_result))
         file.write("\n" + "=" * 40 + "\n")
 
-    def _write_game_results(self, game_results: list[GameResult]) -> None:
+    def _write_game_results(self, game_results: list[GameResult], round_number: int) -> None:
         assert self.game_results_folder is not None
+        Path: TypeAlias = str
+
+        round_folder_suffix: Path = f"round_{round_number}"
+        round_folder_path = os.path.join(self.game_results_folder, round_folder_suffix)
+        os.makedirs(round_folder_path, exist_ok=True)
+        assert round_folder_path is not None
+
         game_result_summary_path = os.path.join(self.game_results_folder, "game_result_summary.txt")
         with open(game_result_summary_path, "a", encoding="utf-8") as file:
             for game_result in game_results:
                 self._write_game_result_summary(file, game_result)
+
+                white_name = "".join(game_result.white_name.split(" ")[1:])
+                black_name = "".join(game_result.black_name.split(" ")[1:])
                 if game_result.moves:
                     game_result_moves_path = os.path.join(
-                        self.game_results_folder, f"game_{game_result.game_id}.txt"
+                        round_folder_path,
+                        f"game_{game_result.game_id}_{white_name}_{black_name}.txt",
                     )
                     with open(game_result_moves_path, "w", encoding="utf-8") as moves_file:
                         self._write_game_result_summary(moves_file, game_result)
@@ -271,7 +316,8 @@ class Controller:
 
                 if self.export_pdn:
                     game_result_pdn_path = os.path.join(
-                        self.game_results_folder, f"game_{game_result.game_id}.pdn"
+                        round_folder_path,
+                        f"game_{game_result.game_id}_{white_name}_{black_name}.pdn",
                     )
                     with open(game_result_pdn_path, "w") as pdn_file:
                         pdn_file.write(game_result.moves_pdn)

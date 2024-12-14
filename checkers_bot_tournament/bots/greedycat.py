@@ -96,12 +96,12 @@ class GreedyCat(Bot):
                 if j:
                     if j.colour is Colour.WHITE:
                         if j.is_king:
-                            self.king_value += self.king_value
+                            material_score += self.king_value
                         else:
                             material_score += self.man_value
                     elif j.colour is Colour.BLACK:
                         if j.is_king:
-                            self.king_value -= self.king_value
+                            material_score -= self.king_value
                         else:
                             material_score -= self.man_value
 

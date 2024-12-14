@@ -9,7 +9,7 @@ from checkers_bot_tournament.move import Move
 from checkers_bot_tournament.piece import Colour
 from checkers_bot_tournament.play_move_info import PlayMoveInfo
 
-AUTO_DRAW_MOVECOUNT = 50 * 2
+AUTO_DRAW_MOVECOUNT = 40 * 2
 
 
 class Game:
@@ -169,15 +169,15 @@ class Game:
         #         return future.result(timeout=10)
         #     except TimeoutError:
         #         !!!
-        move_idx = bot.play_move(
-            PlayMoveInfo(
-                board=copy.deepcopy(self.board),
-                colour=self.current_turn,
-                move_list=copy.copy(move_list),
-                move_history=copy.copy(self.move_history),
-                last_action_move=self.last_action_move,
-            )
+        info = PlayMoveInfo(
+            board=copy.deepcopy(self.board),
+            colour=self.current_turn,
+            move_list=copy.copy(move_list),
+            move_history=copy.copy(self.move_history),
+            last_action_move=self.last_action_move,
+            pos_eval=None,
         )
+        move_idx = bot.play_move(info)
 
         if move_idx < 0 or move_idx >= len(move_list):
             bot_string = make_unique_bot_string(bot.bot_id, bot.get_name())
@@ -198,7 +198,10 @@ class Game:
                 self._record_promotion()
 
         if self.verbose:
-            self.moves_string += f"Move {self.move_number}: {self.current_turn}'s turn\n"
+            eval_str = ""
+            if info.pos_eval is not None:
+                eval_str = f". Eval={round(info.pos_eval, 2)}"
+            self.moves_string += f"Move {self.move_number}: {self.current_turn}'s turn{eval_str}\n"
             self.moves_string += f"Moved from {str(move.start)} to {str(move.end)}\n"
             self.moves_string += "\n" + self.board.display()
 

@@ -71,6 +71,8 @@ class Game:
             pdn_content = file.read().strip()
 
         moves = pdn_content.split()  # Assumes moves are space-separated
+        # NOTE: currently don't support moves with multiple x's
+        # (whether necessary for disambiguation of chain captures or not)
 
         for idx, move in enumerate(moves):
             if "-" in move:  # Regular move
@@ -82,7 +84,7 @@ class Game:
 
             start_pos = self._pdn_to_coordinates(start)
             end_pos = self._pdn_to_coordinates(end)
-            removed_pos = self._get_removed_position(start_pos, end_pos) if "x" in move else None
+            removed_pos = [self._get_removed_position(start_pos, end_pos)] if "x" in move else []
 
             move_obj = Move(start_pos, end_pos, removed_pos)
 

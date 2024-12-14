@@ -3,7 +3,6 @@ from random import randint
 from checkers_bot_tournament.board import Board
 from checkers_bot_tournament.bots.base_bot import Bot
 from checkers_bot_tournament.move import Move
-from checkers_bot_tournament.piece import Colour
 from checkers_bot_tournament.play_move_info import PlayMoveInfo
 
 
@@ -25,11 +24,14 @@ class CopyCat(Bot):
         mirrored_end = (board_size - 1 - move.end[0], board_size - 1 - move.end[1])
 
         # Reflect the removed piece position, if any
-        mirrored_removed = None
+        mirrored_removed: list[tuple[int, int]] = []
+
+        # NOTE: with the changes to captures, this only looks for single captures
+        # even if the opponent made a chain capture. Tbf I don't think it's
+        # possible to mirror a chain capture.
         if move.removed:
-            mirrored_removed = (
-                board_size - 1 - move.removed[0],
-                board_size - 1 - move.removed[1],
+            mirrored_removed.append(
+                (board_size - 1 - move.removed[0][0], board_size - 1 - move.removed[0][1]),
             )
 
         return Move(mirrored_start, mirrored_end, mirrored_removed)

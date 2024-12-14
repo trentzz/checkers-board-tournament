@@ -36,9 +36,9 @@ class Board:
         promotion = False
 
         if move.removed:
-            rem_row, rem_col = move.removed
-            self.grid[rem_row][rem_col] = None
             capture = True
+            for rem_row, rem_col in move.removed:
+                self.grid[rem_row][rem_col] = None
 
         # Promote to king
         if (not piece.is_king) and (
@@ -53,31 +53,53 @@ class Board:
     def add_regular_move(self, moves: list[Move], row: int, col: int, dr: int, dc: int):
         end_row, end_col = row + dr, col + dc
         if self.is_within_bounds(end_row, end_col) and self.grid[end_row][end_col] is None:
-            moves.append(Move((row, col), (end_row, end_col), None))
+            moves.append(Move((row, col), (end_row, end_col), []))
 
     def add_capture_move(
-        self, moves: list[Move], colour: Colour, row: int, col: int, dr: int, dc: int
-    ):
-        capture_row, capture_col = row + 2 * dr, col + 2 * dc
-        if not self.is_within_bounds(capture_row, capture_col):
-            return
+        self,
+        moves: list[Move],
+        colour: Colour,
+        original_row: int,
+        original_col: int,
+        directions: list[tuple[int, int]],
+    ) -> None:
+        def do_DFS(prev_captured_pieces: list[Piece], curr_row: int, curr_col: int) -> None:
+            any_capturable = False
+            for i, (dr, dc) in enumerate(directions):
+                dest_row, dest_col = curr_row + 2 * dr, curr_col + 2 * dc
+                if not self.is_within_bounds(dest_row, dest_col):
+                    continue
 
-        mid_row, mid_col = row + dr, col + dc
-        mid_piece: Optional[Piece] = self.grid[mid_row][mid_col]
-        valid_capture_move = (
-            self.grid[capture_row][capture_col] is None
-            and mid_piece is not None
-            and mid_piece.colour != colour
-        )
+                piece = self.grid[curr_row + dr][curr_col + dc]
+                if piece is None:
+                    continue
 
-        if valid_capture_move:
-            moves.append(
-                Move(
-                    (row, col),
-                    (capture_row, capture_col),
-                    (mid_row, mid_col),
+                capturable = (
+                    piece.colour is not colour
+                    and self.grid[dest_row][dest_col] is None
+                    and piece not in prev_captured_pieces
                 )
-            )
+
+                if capturable:
+                    prev_captured_pieces.append(piece)
+                    any_capturable = True
+                    do_DFS(prev_captured_pieces, dest_row, dest_col)
+                    prev_captured_pieces.pop()
+
+            if not any_capturable and prev_captured_pieces:
+                # No further captures available from this sq, so this is a
+                # leaf node: Make Move obj starting from original row/col
+                # and ending here, with all the captures of our ancestors
+                # Since x.position is a tuple, this is deep copied
+                moves.append(
+                    Move(
+                        (original_row, original_col),
+                        (curr_row, curr_col),
+                        list(map(lambda x: x.position, prev_captured_pieces)),
+                    )
+                )
+
+        do_DFS([], original_row, original_col)
 
     def is_valid_move(self, colour: Colour, move: Move) -> bool:
         return move in self.get_move_list(colour)
@@ -98,14 +120,14 @@ class Board:
 
                     for dr, dc in directions:
                         self.add_regular_move(moves, row, col, dr, dc)
-                        self.add_capture_move(moves, colour, row, col, dr, dc)
+                        self.add_capture_move(moves, colour, row, col, directions)
 
         # Funny rule in checkers, if there is a capture move available, you MUST
         # take it, so here, if there are any capture moves, we filter to only
         # allow captures moves.
         capture_move_available = any([move.removed for move in moves])
         if capture_move_available:
-            capture_moves = list(filter(lambda move: move.removed is not None, moves))
+            capture_moves = list(filter(lambda move: move.removed, moves))
             return capture_moves
 
         # If no capture moves available, return all moves

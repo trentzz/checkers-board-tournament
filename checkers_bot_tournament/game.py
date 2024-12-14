@@ -105,14 +105,14 @@ class Game:
                         f"Invalid move in import_pdn for colour: {str(self.current_turn)}, turn: {self.move_number + 1}, move: {move}"
                     )
 
-            self.move_piece(move_obj)
+            self.move_piece(move_obj, True)
             self.swap_turn()
 
         # Check that the game has NOT ended at this point
         if not self.board.get_move_list(self.current_turn):
             raise RuntimeError(f"PDN game: {self.pdn} is already complete! Nothing for bots to do!")
 
-    def move_piece(self, move: Move) -> None:
+    def move_piece(self, move: Move, from_import: bool = False) -> None:
         """
         Only used by import_pdn and for testing purposes.
         """
@@ -127,6 +127,14 @@ class Game:
                 self._record_capture()
             if promotion:
                 self._record_promotion()
+
+        if self.verbose:
+            self.moves_string += f"Move {self.move_number}: {self.current_turn}'s turn\n"
+            self.moves_string += f"Moved from {str(move.start)} to {str(move.end)}"
+            if from_import:
+                self.moves_string += " (Book Move)"
+            self.moves_string += "\n"
+            self.moves_string += "\n" + self.board.display()
 
     @overload
     def export_pdn(self, filename: str) -> None: ...
@@ -221,11 +229,6 @@ class Game:
         move: Move = move_list[move_idx]
 
         self.move_piece(move)
-
-        if self.verbose:
-            self.moves_string += f"Move {self.move_number}: {self.current_turn}'s turn\n"
-            self.moves_string += f"Moved from {str(move.start)} to {str(move.end)}\n"
-            self.moves_string += "\n" + self.board.display()
 
         if self.move_number - self.last_action_move >= AUTO_DRAW_MOVECOUNT:
             result = Result.DRAW

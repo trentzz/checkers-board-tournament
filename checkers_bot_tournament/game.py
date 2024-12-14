@@ -36,7 +36,6 @@ class Game:
         self.pdn = start_pdn
 
         self.current_turn = Colour.WHITE
-        self.move_number = 1
         self.is_first_move = True
 
         # There must be a capture or promotion within last 50 moves
@@ -55,6 +54,15 @@ class Game:
         if self.pdn:
             self.import_pdn(self.pdn)
 
+    @property
+    def move_number(self) -> int:
+        """
+        Querying move_number happens after a move is made, so move_number
+        represents the move number of the last recorded move in move_history
+        and NOT the move number of the next move.
+        """
+        return len(self.move_history)
+
     def import_pdn(self, filename: str) -> None:
         """
         Imports a PDN file and populates the move history and board state.
@@ -64,7 +72,7 @@ class Game:
 
         moves = pdn_content.split()  # Assumes moves are space-separated
 
-        for move in moves:
+        for idx, move in enumerate(moves):
             if "-" in move:  # Regular move
                 start, end = move.split("-")
             elif "x" in move:  # Capture move
@@ -78,20 +86,54 @@ class Game:
 
             move_obj = Move(start_pos, end_pos, removed_pos)
 
-            if not self.board.is_valid_move(self.current_turn, move_obj):
-                raise RuntimeError(f"Invalid move in import_pdn: {move}")
+            # Check if the first move is valid for white or black and set
+            # current_turn accordingly
+            if idx == 0:
+                assert not self.move_history
 
-            capture, promotion = self.board.move_piece(move_obj)
-            if capture or promotion:
-                # Reset action move, since capture or promotion occured
-                self.last_action_move = self.move_number
-                if capture:
-                    self._record_capture()
-                if promotion:
-                    self._record_promotion()
+                if self.board.is_valid_move(Colour.WHITE, move_obj):
+                    self.current_turn = Colour.WHITE
+                elif self.board.is_valid_move(Colour.BLACK, move_obj):
+                    self.current_turn = Colour.BLACK
+                else:
+                    raise RuntimeError(
+                        f"First move in import_pdn is invalid for both white and black: {move}"
+                    )
+            else:
+                if not self.board.is_valid_move(self.current_turn, move_obj):
+                    raise RuntimeError(
+                        f"Invalid move in import_pdn for colour: {str(self.current_turn)}, turn: {self.move_number + 1}, move: {move}"
+                    )
 
-            self.move_number += 1
+            self.move_piece(move_obj, True)
             self.swap_turn()
+
+        # Check that the game has NOT ended at this point
+        if not self.board.get_move_list(self.current_turn):
+            raise RuntimeError(f"PDN game: {self.pdn} is already complete! Nothing for bots to do!")
+
+    def move_piece(self, move: Move, from_import: bool = False) -> None:
+        """
+        Only used by import_pdn and for testing purposes.
+        """
+        # Update move history
+        self.move_history.append(move)
+        capture, promotion = self.board.move_piece(move)
+
+        if capture or promotion:
+            # Reset action move, since capture or promotion occured
+            self.last_action_move = self.move_number
+            if capture:
+                self._record_capture()
+            if promotion:
+                self._record_promotion()
+
+        if self.verbose:
+            self.moves_string += f"Move {self.move_number}: {self.current_turn}'s turn\n"
+            self.moves_string += f"Moved from {str(move.start)} to {str(move.end)}"
+            if from_import:
+                self.moves_string += " (Book Move)"
+            self.moves_string += "\n" + self.board.display() + "\n"
 
     @overload
     def export_pdn(self, filename: str) -> None: ...
@@ -185,24 +227,9 @@ class Game:
             bot_string = make_unique_bot_string(bot.bot_id, bot._get_name())
             raise RuntimeError(f"bot: {bot_string} has played an invalid move")
 
-        move = move_list[move_idx]
+        move: Move = move_list[move_idx]
 
-        self.move_history.append(move)
-
-        capture, promotion = self.board.move_piece(move)
-
-        if capture or promotion:
-            # Reset action move, since capture or promotion occured
-            self.last_action_move = self.move_number
-            if capture:
-                self._record_capture()
-            if promotion:
-                self._record_promotion()
-
-        if self.verbose:
-            self.moves_string += f"Move {self.move_number}: {self.current_turn}'s turn\n"
-            self.moves_string += f"Moved from {str(move.start)} to {str(move.end)}\n"
-            self.moves_string += "\n" + self.board.display()
+        self.move_piece(move)
 
         if self.move_number - self.last_action_move >= AUTO_DRAW_MOVECOUNT:
             result = Result.DRAW
@@ -214,7 +241,6 @@ class Game:
             # self.write_game_result(result)
             return result
 
-        self.move_number += 1
         return None
 
     def _record_capture(self) -> None:

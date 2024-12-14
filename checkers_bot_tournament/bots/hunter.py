@@ -13,6 +13,7 @@ class Hunter(Bot):
     """
 
     WINNING_ENDGAME_SCORE = 100
+    WON_GAME = 1000
 
     def __init__(self, bot_id: int) -> None:
         super().__init__(bot_id)
@@ -59,9 +60,9 @@ class Hunter(Bot):
         move_list = board.get_move_list(colour_to_move)
         if len(move_list) == 0:
             if colour_to_move == Colour.WHITE:
-                return [], -inf
+                return [], -self.WON_GAME - depth  # encourage finishing game earlier
             else:
-                return [], inf
+                return [], self.WON_GAME + depth
 
         if depth > 0 or move_list[0].removed:
             # Continue searching/finish the capture sequence
@@ -210,8 +211,8 @@ class Hunter(Bot):
                     base -= 0.5
 
             # Close down the distance if winning
-            white_winning_endgame = base_score >= self.WINNING_ENDGAME_SCORE
-            black_winning_endgame = base_score <= -self.WINNING_ENDGAME_SCORE
+            white_winning_endgame = True  # base_score >= self.WINNING_ENDGAME_SCORE
+            black_winning_endgame = True  # base_score <= -self.WINNING_ENDGAME_SCORE
 
             if white_winning_endgame and piece.colour is Colour.WHITE:
                 closest_dist = min(map(lambda x: get_distance(piece, x), black_pieces))
@@ -225,7 +226,7 @@ class Hunter(Bot):
         def score_general(base_score: float) -> float:
             white_pieces: list[Piece] = []
             black_pieces: list[Piece] = []
-            if abs(base_score) >= self.WINNING_ENDGAME_SCORE:
+            if True:
                 for row in board.grid:
                     for piece in row:
                         if not piece:
@@ -286,8 +287,12 @@ class Hunter(Bot):
                             black_men += 1
 
         if white_kings >= 3 and black_kings <= 1 and black_men == 0:
+            base_score += self.WINNING_ENDGAME_SCORE + 10
+        elif white_kings >= 4 and black_kings <= 2 and black_men == 0:
             base_score += self.WINNING_ENDGAME_SCORE
         elif black_kings >= 3 and white_kings <= 1 and white_men == 0:
+            base_score -= self.WINNING_ENDGAME_SCORE + 10
+        elif black_kings >= 4 and white_kings <= 2 and white_men == 0:
             base_score -= self.WINNING_ENDGAME_SCORE
 
         return score_general(base_score)

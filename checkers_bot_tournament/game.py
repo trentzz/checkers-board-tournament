@@ -122,13 +122,13 @@ class Game:
         """
         # Update move history
         self.move_history.append(move)
-        capture, promotion = self.board.move_piece(move)
+        captures, promotion = self.board.move_piece(move)
 
-        if capture or promotion:
+        if captures or promotion:
             # Reset action move, since capture or promotion occured
             self.last_action_move = self.move_number
-            if capture:
-                self._record_capture()
+            if captures:
+                self._record_capture(captures)
             if promotion:
                 self._record_promotion()
 
@@ -250,11 +250,11 @@ class Game:
 
         return None
 
-    def _record_capture(self) -> None:
+    def _record_capture(self, captures: int) -> None:
         if self.current_turn == Colour.WHITE:
-            self.white_num_captures += 1
+            self.white_num_captures += captures
         else:
-            self.black_num_captures += 1
+            self.black_num_captures += captures
 
     def _record_promotion(self) -> None:
         if self.current_turn == Colour.WHITE:

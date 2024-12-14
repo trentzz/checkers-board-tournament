@@ -1,8 +1,6 @@
 import copy
 
-from checkers_bot_tournament.board import Board
 from checkers_bot_tournament.bots.base_bot import Bot
-from checkers_bot_tournament.move import Move
 from checkers_bot_tournament.piece import Colour
 from checkers_bot_tournament.play_move_info import PlayMoveInfo
 
@@ -41,5 +39,6 @@ class ScaredyCat(Bot):
 
         return max_index1
 
-    def get_name(self) -> str:
+    @classmethod
+    def _get_name(cls) -> str:
         return "ScaredyCat"

@@ -2,7 +2,6 @@ import copy
 
 from checkers_bot_tournament.board import Board
 from checkers_bot_tournament.bots.base_bot import Bot
-from checkers_bot_tournament.move import Move
 from checkers_bot_tournament.piece import Colour
 from checkers_bot_tournament.play_move_info import PlayMoveInfo
 
@@ -117,5 +116,6 @@ class GreedyCat(Bot):
         # Return the difference in material count
         return material_score
 
-    def get_name(self) -> str:
+    @classmethod
+    def _get_name(cls) -> str:
         return "GreedyCat"

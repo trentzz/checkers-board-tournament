@@ -2,8 +2,8 @@ import pytest
 
 from checkers_bot_tournament.board import Board
 from checkers_bot_tournament.board_start_builder import DefaultBSB
-from checkers_bot_tournament.bots.random_bot import RandomBot
 from checkers_bot_tournament.bots.bot_tracker import BotTracker
+from checkers_bot_tournament.bots.random_bot import RandomBot
 from checkers_bot_tournament.game import Game
 from checkers_bot_tournament.move import Move
 

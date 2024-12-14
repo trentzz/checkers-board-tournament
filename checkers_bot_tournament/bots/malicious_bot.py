@@ -8,20 +8,7 @@ class MaliciousBot(Bot):
         # Try to mess with the move_history. This should not work.
         x = info.move_history
         if len(x) > 0:
-            x[0] = Move(
-                (
-                    0,
-                    0,
-                ),
-                (
-                    9,
-                    9,
-                ),
-                (
-                    6,
-                    0,
-                ),
-            )
+            x[0] = Move((0, 0), (9, 9), (6, 0))
             # etc etc.
         return 0
 

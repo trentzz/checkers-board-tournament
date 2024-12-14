@@ -236,12 +236,7 @@ class Controller:
             #     self.game_results[rnd].append(game_result)
 
             # Add task of recording all games in the round to writer thread
-            self.write_queue.put(
-                (
-                    self.game_results[rnd],
-                    rnd,
-                )
-            )
+            self.write_queue.put((self.game_results[rnd], rnd))
             # self._write_game_results(self.game_results[rnd])
 
             # Calculate Elo at the end of all matches in a round
@@ -260,10 +255,10 @@ class Controller:
 
             t1 = time.time()
             if self.verbose:
-                print(f"Round {rnd} completed in {round(t1-t0, 1)} seconds")
+                print(f"Tournament {rnd} completed in {round(t1-t0, 1)} seconds")
 
         if self.verbose:
-            print("Tournament completed, writing stats")
+            print("All games completed, writing summary stats...")
 
         # Wait until all write tasks are completed
         self.write_queue.join()

@@ -5,7 +5,7 @@ from datetime import datetime
 from multiprocessing import Pool
 from queue import Queue
 from threading import Thread
-from typing import IO, Dict, Optional, Type, TypeAlias
+from typing import IO, Dict, Optional, Type
 
 from checkers_bot_tournament.board import Board
 from checkers_bot_tournament.board_start_builder import (
@@ -96,7 +96,7 @@ class Controller:
         self.game_results: list[list[GameResult]] = [[] for _ in range(rounds)]
         self.game_id_counter: int = 0
         self.game_results_folder: Optional[str] = None
-        self.write_queue: Queue[tuple[list[GameResult], int] | None] = Queue()
+        self.write_queue: Queue[Optional[tuple[list[GameResult], int]]] = Queue()
         self.writer_thread = Thread(target=self._writer_worker, daemon=True)
 
         self._init_game_schedule()
@@ -287,38 +287,44 @@ class Controller:
         file.write("\n" + "=" * 40 + "\n")
 
     def _write_game_results(self, game_results: list[GameResult], round_number: int) -> None:
+        # Summary for each game
         assert self.game_results_folder is not None
-        Path: TypeAlias = str
-
-        round_folder_suffix: Path = f"round_{round_number}"
-        round_folder_path = os.path.join(self.game_results_folder, round_folder_suffix)
-        os.makedirs(round_folder_path, exist_ok=True)
-        assert round_folder_path is not None
-
         game_result_summary_path = os.path.join(self.game_results_folder, "game_result_summary.txt")
         with open(game_result_summary_path, "a", encoding="utf-8") as file:
             for game_result in game_results:
                 self._write_game_result_summary(file, game_result)
 
-                white_name = "".join(game_result.white_name.split(" ")[1:])
-                black_name = "".join(game_result.black_name.split(" ")[1:])
-                if game_result.moves:
-                    game_result_moves_path = os.path.join(
-                        round_folder_path,
-                        f"game_{game_result.game_id}_{white_name}_{black_name}.txt",
-                    )
-                    with open(game_result_moves_path, "w", encoding="utf-8") as moves_file:
-                        self._write_game_result_summary(moves_file, game_result)
-                        moves_file.write("Moves: \n")
-                        moves_file.write(game_result.moves)
+        if not (self.verbose or self.pdn):
+            # Nothing else to print out
+            return
 
-                if self.export_pdn:
-                    game_result_pdn_path = os.path.join(
-                        round_folder_path,
-                        f"game_{game_result.game_id}_{white_name}_{black_name}.pdn",
-                    )
-                    with open(game_result_pdn_path, "w") as pdn_file:
-                        pdn_file.write(game_result.moves_pdn)
+        # Move by move report for each game if verbose/PDN options selected
+        # They both go in round subfolder
+        round_subfolder_name = f"round_{round_number}"
+        round_folder_path = os.path.join(self.game_results_folder, round_subfolder_name)
+        os.makedirs(round_folder_path, exist_ok=True)
+
+        for game_result in game_results:
+            white_name = "".join(game_result.white_name.split(" ")[1:])
+            black_name = "".join(game_result.black_name.split(" ")[1:])
+
+            if self.verbose:
+                game_result_moves_path = os.path.join(
+                    round_folder_path,
+                    f"game_{game_result.game_id}_{white_name}_{black_name}.txt",
+                )
+                with open(game_result_moves_path, "w", encoding="utf-8") as moves_file:
+                    self._write_game_result_summary(moves_file, game_result)
+                    moves_file.write("Moves: \n")
+                    moves_file.write(game_result.moves)
+
+            if self.export_pdn:
+                game_result_pdn_path = os.path.join(
+                    round_folder_path,
+                    f"game_{game_result.game_id}_{white_name}_{black_name}.pdn",
+                )
+                with open(game_result_pdn_path, "w") as pdn_file:
+                    pdn_file.write(game_result.moves_pdn)
 
     def _write_tournament_results(self) -> None:
         assert self.game_results_folder is not None

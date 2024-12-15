@@ -1,4 +1,5 @@
 import copy
+import textwrap
 from typing import Optional, Tuple, overload
 
 from checkers_bot_tournament.board_start_builder import BoardStartBuilder
@@ -134,13 +135,21 @@ class Game:
 
         if self.verbose:
             eval_str = ""
-            if play_move_info and play_move_info.pos_eval is not None:
-                eval_str = f". Bot's eval: {play_move_info.pos_eval:.2f}"
+            if play_move_info and play_move_info.position_eval_ret is not None:
+                eval_str = f". Bot's eval: {play_move_info.position_eval_ret:.2f}"
             self.moves_string += f"Move {self.move_number}: {self.current_turn}'s turn{eval_str}\n"
+            if play_move_info and play_move_info.custom_str_ret:
+                # Limit to 80 characters
+                self.moves_string += (
+                    textwrap.fill(
+                        play_move_info.custom_str_ret, 80, replace_whitespace=False
+                    ).rstrip()
+                    + "\n"
+                )
             self.moves_string += f"Moved from {str(move.start)} to {str(move.end)}"
             if from_import:
                 self.moves_string += " (Book Move)"
-            self.moves_string += "\n" + self.board.display() + "\n"
+            self.moves_string += "\n" + self.board.display(move) + "\n"
 
     @overload
     def export_pdn(self, filename: str) -> None: ...
@@ -226,7 +235,6 @@ class Game:
             move_list=copy.copy(move_list),
             move_history=copy.copy(self.move_history),
             last_action_move=self.last_action_move,
-            pos_eval=None,
         )
         move_idx = bot.play_move(info)
 

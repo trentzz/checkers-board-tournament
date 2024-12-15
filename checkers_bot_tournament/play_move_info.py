@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Optional
 
 from checkers_bot_tournament.board import Board
 from checkers_bot_tournament.move import Move
@@ -13,4 +14,5 @@ class PlayMoveInfo:
     move_history: list[Move]  # history of the moves played in the game
     last_action_move: int  # last move which an action happened
 
-    pos_eval: float | None
+    position_eval_ret: Optional[float] = None
+    custom_str_ret: Optional[str] = None

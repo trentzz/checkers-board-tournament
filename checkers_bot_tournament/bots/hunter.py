@@ -1,7 +1,9 @@
 from math import inf
+from pprint import pformat
 
 from checkers_bot_tournament.board import Board
 from checkers_bot_tournament.bots.base_bot import Bot
+from checkers_bot_tournament.move import Move
 from checkers_bot_tournament.piece import Colour, Piece
 from checkers_bot_tournament.play_move_info import PlayMoveInfo
 
@@ -23,7 +25,7 @@ class Hunter(Bot):
         board = info.board
 
         # print(f"Ply {self.ply if colour == Colour.WHITE else self.ply + 1} as {colour}")
-        pieces = 0
+        # pieces = 0
         white_pieces = 0
         black_pieces = 0
         for i in board.grid:
@@ -39,19 +41,29 @@ class Hunter(Bot):
             depth = 8
         if white_pieces == 2 or black_pieces == 2:
             depth = 6
+        elif (white_pieces + black_pieces) <= 12:
+            depth = 6
         else:
-            pieces = white_pieces + black_pieces
-            if pieces <= 12:
-                depth = 5
-            else:
-                depth = 3
+            depth = 4
 
-        best_idx, best_eval = self.minimax(board, depth, -inf, inf, colour)
+        best_idx_line, best_eval = self.minimax(board, depth, -inf, inf, colour)
 
-        info.pos_eval = best_eval
+        best_line: list[Move] = []
+        curr_colour = colour
+        search_board = board.__copy__()
+        for idx in reversed(best_idx_line):
+            move = search_board.get_move_list(curr_colour)[idx]
+            best_line.append(move)
+            search_board.move_piece(move)
+            curr_colour = curr_colour.get_opposite()
+
+        info.position_eval_ret = best_eval
+        info.custom_str_ret = (
+            "Engine line: " + str(best_line) + "\n\n" + pformat(board.grid, compact=True)
+        )
 
         self.ply += 2
-        return best_idx.pop()
+        return best_idx_line.pop()
 
     def minimax(
         self, board: Board, depth: float, alpha: float, beta: float, colour_to_move: Colour
@@ -210,8 +222,8 @@ class Hunter(Bot):
                     base -= 0.5
 
             # Close down the distance if winning
-            white_winning_endgame = True  # base_score >= self.WINNING_ENDGAME_SCORE
-            black_winning_endgame = True  # base_score <= -self.WINNING_ENDGAME_SCORE
+            white_winning_endgame = base_score >= self.WINNING_ENDGAME_SCORE
+            black_winning_endgame = base_score <= -self.WINNING_ENDGAME_SCORE
 
             if white_winning_endgame and piece.colour is Colour.WHITE:
                 closest_dist = min(map(lambda x: get_distance(piece, x), black_pieces))
@@ -222,19 +234,9 @@ class Hunter(Bot):
 
             return base if piece.colour is Colour.WHITE else -base
 
-        def score_general(base_score: float) -> float:
-            white_pieces: list[Piece] = []
-            black_pieces: list[Piece] = []
-            if True:
-                for row in board.grid:
-                    for piece in row:
-                        if not piece:
-                            continue
-                        if piece.colour == Colour.WHITE:
-                            white_pieces.append(piece)
-                        else:
-                            black_pieces.append(piece)
-
+        def score_general(
+            base_score: float, white_pieces: list[Piece], black_pieces: list[Piece]
+        ) -> float:
             material_score = 0.0
             for row in board.grid:
                 for piece in row:
@@ -270,18 +272,22 @@ class Hunter(Bot):
         white_kings = 0
         black_men = 0
         black_kings = 0
+        white_pieces: list[Piece] = []
+        black_pieces: list[Piece] = []
 
         for row in board.grid:
             for piece in row:
                 if piece:
-                    if piece.is_king:
-                        if piece.colour is Colour.WHITE:
+                    if piece.colour is Colour.WHITE:
+                        white_pieces.append(piece)
+                        if piece.is_king:
                             white_kings += 1
                         else:
-                            black_kings += 1
-                    else:
-                        if piece.colour is Colour.WHITE:
                             white_men += 1
+                    else:
+                        black_pieces.append(piece)
+                        if piece.is_king:
+                            black_kings += 1
                         else:
                             black_men += 1
 
@@ -294,7 +300,7 @@ class Hunter(Bot):
         elif black_kings >= 4 and white_kings <= 2 and white_men == 0:
             base_score -= self.WINNING_ENDGAME_SCORE
 
-        return score_general(base_score)
+        return score_general(base_score, white_pieces, black_pieces)
 
     @classmethod
     def _get_name(cls) -> str:

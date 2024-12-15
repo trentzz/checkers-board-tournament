@@ -31,6 +31,8 @@ from checkers_bot_tournament.stat_printing import (
     write_tournament_overall_stats,
 )
 
+SINGLE_PROC = False
+
 
 @dataclass
 class GameResultStat:
@@ -232,19 +234,25 @@ class Controller:
 
     def run(self) -> None:
         self._create_timestamped_folder()
-        self.writer_thread.start()
+        if not SINGLE_PROC:
+            self.writer_thread.start()
+
         for rnd in range(self.rounds):
             t0 = time.time()
 
-            with Pool() as pool:
-                self.game_results[rnd] = pool.map(Game.run, self.games[rnd])
-            # for game in self.games[rnd]:
-            #     game_result = game.run()
-            #     self.game_results[rnd].append(game_result)
+            if SINGLE_PROC:
+                for game in self.games[rnd]:
+                    game_result = game.run()
+                    self.game_results[rnd].append(game_result)
+            else:
+                with Pool() as pool:
+                    self.game_results[rnd] = pool.map(Game.run, self.games[rnd])
 
             # Add task of recording all games in the round to writer thread
-            self.write_queue.put((self.game_results[rnd], rnd))
-            # self._write_game_results(self.game_results[rnd], rnd)
+            if SINGLE_PROC:
+                self._write_game_results(self.game_results[rnd], rnd)
+            else:
+                self.write_queue.put((self.game_results[rnd], rnd))
 
             # Calculate Elo at the end of all matches in a round
             for game, game_result in zip(self.games[rnd], self.game_results[rnd]):
@@ -269,11 +277,12 @@ class Controller:
         if self.verbose:
             print("All games completed, writing summary stats...")
 
-        # Wait until all write tasks are completed
-        self.write_queue.join()
-        # Enqueue the sentinel to signal the writer thread to exit
-        self.write_queue.put(None)
-        self.writer_thread.join()
+        if not SINGLE_PROC:
+            # Wait until all write tasks are completed
+            self.write_queue.join()
+            # Enqueue the sentinel to signal the writer thread to exit
+            self.write_queue.put(None)
+            self.writer_thread.join()
 
         self._write_tournament_results()
 

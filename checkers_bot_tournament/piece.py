@@ -13,6 +13,12 @@ class Colour(Enum):
         elif self == Colour.BLACK:
             return Colour.WHITE
 
+    def __repr__(self):
+        if self == Colour.WHITE:
+            return "Colour.WHITE"
+        elif self == Colour.BLACK:
+            return "Colour.BLACK"
+
 
 @dataclass
 class Piece:

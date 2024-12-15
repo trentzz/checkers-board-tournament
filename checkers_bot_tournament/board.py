@@ -152,30 +152,86 @@ class Board:
         row, col = position
         return self.grid[row][col] if 0 <= row < self.size and 0 <= col < self.size else None
 
-    def display_cell(self, cell: Optional[Piece], x: int, y: int) -> str:
-        if not cell:
+    def _display_cell(
+        self,
+        cell: Optional[Piece],
+        x: int,
+        y: int,
+        move: Optional[Move],
+        intermediate_sqs: list[tuple[int, int]],
+    ) -> str:
+        def get_direction(start: tuple[int, int], end: tuple[int, int]):
+            # print(intermediate_sqs, move, start, end)
+            y_start, x_start = start
+            y_end, x_end = end
+            # Remember, counting from top left
+            if (x_end - x_start) < 0:
+                if (y_end - y_start) < 0:
+                    return "↖"
+                else:
+                    return "↙"
+            else:
+                if (y_end - y_start) < 0:
+                    return "↗"
+                else:
+                    return "↘"
+
+        def get_piece(cell: Piece):
+            match (cell.colour, cell.is_king):
+                case (Colour.WHITE, False):
+                    return "w"
+                case (Colour.WHITE, True):
+                    return "W"
+                case (Colour.BLACK, False):
+                    return "b"
+                case (Colour.BLACK, True):
+                    return "B"
+                case _:
+                    raise ValueError("Unexpected piece state encountered.")
+
+        if cell is None:
             if (x + y) % 2 == 0:
                 return " "
-            else:
-                return "."
+            if not move:
+                # No information to draw enriched characters
+                return "·"
 
-        match (cell.colour, cell.is_king):
-            case (Colour.WHITE, False):
-                return "w"
-            case (Colour.WHITE, True):
-                return "W"
-            case (Colour.BLACK, False):
-                return "b"
-            case (Colour.BLACK, True):
-                return "B"
-            case _:
-                raise ValueError("Unexpected piece state encountered.")
+            if (y, x) in move.removed:
+                # A piece got captured here
+                return "⚬"
 
-    def display(self) -> str:
-        # Looks disgusting but yay pythom
+            for idx, (intermediate_sq) in enumerate(intermediate_sqs[:-1]):
+                if (y, x) == intermediate_sq:
+                    return get_direction(intermediate_sq, intermediate_sqs[idx + 1])
+
+            # Ordinary blank square
+            return "·"
+
+        # Some piece is in this square
+        if move and (y, x) == move.end:
+            # This piece moved, so underline it for clarity
+            return get_piece(cell) + "\u0332"
+        else:
+            return get_piece(cell)
+
+    def display(self, move: Optional[Move] = None) -> str:
+        """
+        Looks disgusting but yay pythom [sic]
+        Passing in a Move gives information to enrich the display of the board
+        Like arrows for starting/intermediate squares and empty circles for captures.
+        """
+
+        # For drawing arrows. It's also convenient to have the start coordinate in the list.
+        intermediate_sqs = []
+        if move:
+            intermediate_sqs = move.get_intermediate_squares()
+            intermediate_sqs.insert(0, move.start)
         return (
             "\n".join(
-                " ".join(self.display_cell(cell, x, y) for x, cell in enumerate(row))
+                " ".join(
+                    self._display_cell(cell, x, y, move, intermediate_sqs)
+                    for x, cell in enumerate(row)
+                )
                 for y, row in enumerate(self.grid)
             )
             + "\n"

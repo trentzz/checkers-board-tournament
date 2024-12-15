@@ -116,5 +116,6 @@ class GreedyCat(Bot):
         # Return the difference in material count
         return material_score
 
-    def get_name(self) -> str:
+    @classmethod
+    def _get_name(cls) -> str:
         return "GreedyCat"

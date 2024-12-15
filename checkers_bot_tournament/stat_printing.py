@@ -145,10 +145,10 @@ def write_tournament_h2h_stats(
             else:
                 # Top half: show stats
                 row_bot_name = make_unique_bot_string(row_bot)
-                row_bot_id = row_bot.bot.bot_id
+                row_bot_id = row_bot.bot_id
 
                 col_bot_name = make_unique_bot_string(col_bot)
-                col_bot_id = col_bot.bot.bot_id
+                col_bot_id = col_bot.bot_id
 
                 # Row perspective stats: row_bot vs col_bot
                 stat_row_vs_col = row_bot.h2h_stats[col_bot_name]

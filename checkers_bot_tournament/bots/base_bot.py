@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import final
 
 from checkers_bot_tournament.play_move_info import PlayMoveInfo
 
@@ -19,9 +20,17 @@ class Bot(ABC):
         """
         raise RuntimeError("play_move not implemented!")
 
+    @classmethod
     @abstractmethod
-    def get_name(self) -> str:
+    def _get_name(cls) -> str:
         """
         Returns bot's name. Make sure this matches Controller!
         """
         raise RuntimeError("get_name not implemented yet!")
+
+    @final
+    def get_name(self) -> str:
+        """
+        Returns bot's name. Make sure this matches Controller!
+        """
+        return self.__class__._get_name()

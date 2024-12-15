@@ -43,10 +43,9 @@ class GameResultStat:
 
 
 class BotTracker:
-    def __init__(self, bot_type: Type[Bot], bot_id: int, unique_bot_names: list[str]) -> None:
-        self.bot_type = bot_type
+    def __init__(self, bot_class: Type[Bot], bot_id: int, unique_bot_names: list[str]) -> None:
+        self.bot_class = bot_class
         self.bot_id = bot_id
-        self.bot: Bot = self.bot_type(self.bot_id)
 
         self.rating: float = EloConfig.STARTING_ELO
         self.stats = GameResultStat()
@@ -59,6 +58,9 @@ class BotTracker:
         # resets every tournament
         self.tournament_evs: list[float] = []
         self.tournament_scores: list[float] = []
+
+    def spawn_bot(self) -> Bot:
+        return self.bot_class(self.bot_id)
 
     def calculate_ev(self, other: "BotTracker") -> float:
         Qa = 10 ** (self.rating / EloConfig.SCALE)
@@ -76,7 +78,7 @@ class BotTracker:
     def register_game_result(self, game_result: GameResult):
         from checkers_bot_tournament.checkers_util import make_unique_bot_string
 
-        unique_name = make_unique_bot_string(self.bot)
+        unique_name = make_unique_bot_string(self.bot_id, self.bot_class._get_name())
         white_score_lookup = {Result.WHITE: 1, Result.BLACK: 0, Result.DRAW: 0.5}
 
         match unique_name:
@@ -124,6 +126,9 @@ class BotTracker:
                 )
 
     def update_rating(self) -> None:
+        """
+        Call this when both all EVs and results of tournament have been registered.
+        """
         assert len(self.tournament_evs) == len(self.tournament_scores), (
             f"{self.tournament_evs} {self.tournament_scores}"
             "You are supposed to call this after registering all tournament results"
@@ -139,6 +144,3 @@ class BotTracker:
         self.games_played += tournament_games_played
         self.tournament_evs = []
         self.tournament_scores = []
-
-    def reset_bot(self) -> None:
-        self.bot = self.bot_type(self.bot_id)

@@ -25,10 +25,10 @@ def make_unique_bot_string(*args, **kwargs) -> str:
     # Runtime implementation:
     if len(args) == 1 and isinstance(args[0], Bot):
         bot = args[0]
-        return f"[{bot.bot_id}] {bot.get_name()}"
+        return f"[{bot.bot_id}] {bot._get_name()}"
     elif len(args) == 1 and isinstance(args[0], BotTracker):
-        bot = args[0].bot
-        return f"[{bot.bot_id}] {bot.get_name()}"
+        bot_tracker = args[0]
+        return f"[{bot_tracker.bot_id}] {bot_tracker.bot_class._get_name()}"
     elif len(args) == 2 and isinstance(args[0], int) and isinstance(args[1], str):
         idx, bot_str = args
         return f"[{idx}] {bot_str}"

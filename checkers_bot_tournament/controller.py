@@ -60,7 +60,7 @@ class Controller:
         mode: str,
         board_start_builder: str,
         pdn: Optional[str],
-        bot_name: Optional[str],
+        protagonist_bot_name: Optional[str],
         bot_names: list[str],
         size: int,
         rounds: int,
@@ -77,7 +77,8 @@ class Controller:
         )
 
         self.pdn = pdn
-        self.bot_name = bot_name
+        self.protagonist_bot_name = protagonist_bot_name
+        self.protagonist_tracker: Optional[BotTracker] = None
 
         self.bot_list: list[BotTracker] = self._init_bots(bot_names)
 
@@ -106,13 +107,15 @@ class Controller:
             raise ValueError(f"bots: {', '.join(unrecognised_bots)} entered in CLI not recognised!")
 
         idx_bot_names: list[tuple[int, str]] = [
-            (
-                idx,
-                bot_name,
-            )
-            for idx, bot_name in enumerate(bot_names)
+            (idx, bot_name) for idx, bot_name in enumerate(bot_names)
         ]
+
         unique_bot_names = list(map(lambda x: make_unique_bot_string(x[0], x[1]), idx_bot_names))
+        # If selected, player bot (idx -1) needs to be added to the list for other BotTrackers.
+        # It will actually get initialised later in _init_game_schedule()
+        if self.protagonist_bot_name:
+            unique_bot_names.append(make_unique_bot_string(-1, self.protagonist_bot_name))
+
         for idx, bot_name in idx_bot_names:
             bot_class = self.bot_mapping[bot_name]
             bot_list.append(
@@ -124,32 +127,35 @@ class Controller:
     def _init_game_schedule(self) -> None:
         match self.mode:
             case "all":
-                assert self.bot_name is None, "--player should not be set if running on all mode"
+                assert (
+                    self.protagonist_bot_name is None
+                ), "--bot [NAME] should not be set if running on all mode"
                 self._init_all_schedule()
             case "one":
-                assert self.bot_name, "--player must be set in one mode"
+                assert self.protagonist_bot_name, "--bot [NAME] must be set in one mode"
                 try:
                     # Special case: we set the bot id to -1 since the list starts at 0
                     # kinda hacky but uh :D
                     unique_bot_names = list(map(make_unique_bot_string, self.bot_list))
-                    bot_class = self.bot_mapping[self.bot_name]
-                    hero_bot = BotTracker(
+                    bot_class = self.bot_mapping[self.protagonist_bot_name]
+                    self.protagonist_tracker = BotTracker(
                         bot_type=bot_class, bot_id=-1, unique_bot_names=unique_bot_names
                     )
                 except KeyError as _:
                     raise ValueError(
-                        f"bot name {self.bot_name} entered in CLI not recognised!"
+                        f"bot name {self.protagonist_bot_name} entered in CLI not recognised!"
                     ) from _
-                self._init_one_schedule(hero_bot)
+                self._init_one_schedule(self.protagonist_tracker)
             case _:
                 raise ValueError(f"mode value {self.mode} not recognised!")
 
         if self.verbose:
             games_per_round = len(self.games[0])
             total = len(self.games[0]) * self.rounds
+            mode_str = "double-round-robin games" if self.mode == "all" else "one-vs-all games"
             print(f"{len(self.bot_list)} bots registered")
             print(
-                f"{games_per_round} double-round-robin games/tourney * {self.rounds} tourneys = {total} games scheduled"
+                f"{games_per_round} {mode_str}/tourney * {self.rounds} tourneys = {total} games scheduled"
             )
 
     def _init_all_schedule(self) -> None:
@@ -162,13 +168,13 @@ class Controller:
                     if id1 < id2:
                         self._schedule_pair_game(bot1, bot2, rnd)
 
-    def _init_one_schedule(self, hero_bot: BotTracker) -> None:
+    def _init_one_schedule(self, protagonist_bot: BotTracker) -> None:
         """
         Runs the one bot against all bots in the bot list
         """
         for rnd in range(self.rounds):
             for id2, other in enumerate(self.bot_list):
-                self._schedule_pair_game(hero_bot, other, rnd)
+                self._schedule_pair_game(protagonist_bot, other, rnd)
 
     def _schedule_pair_game(self, bot1: BotTracker, bot2: BotTracker, rnd: int) -> None:
         new_game1 = Game(
@@ -242,6 +248,8 @@ class Controller:
 
             for bot in self.bot_list:
                 bot.update_rating()
+            if self.protagonist_tracker:
+                self.protagonist_tracker.update_rating()
 
             if self.verbose:
                 print(f"Round {rnd} completed")
@@ -281,5 +289,9 @@ class Controller:
         game_result_stats_path = os.path.join(self.game_results_folder, "game_result_stats.txt")
 
         with open(game_result_stats_path, "w", encoding="utf-8") as file:
-            write_tournament_overall_stats(self.bot_list, file)
-            write_tournament_h2h_stats(self.bot_list, file)
+            write_tournament_overall_stats(
+                self.bot_list, file, protagonist_tracker=self.protagonist_tracker
+            )
+            write_tournament_h2h_stats(
+                self.bot_list, file, protagonist_tracker=self.protagonist_tracker
+            )

@@ -19,3 +19,6 @@ class Piece:
     position: Tuple[int, int]  # row, col from top left
     colour: Colour
     is_king: bool = False
+
+    def __copy__(self):
+        return Piece(self.position, self.colour, self.is_king)

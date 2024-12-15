@@ -1,5 +1,3 @@
-import copy
-
 from checkers_bot_tournament.board import Board
 from checkers_bot_tournament.bots.base_bot import Bot
 from checkers_bot_tournament.piece import Colour
@@ -45,7 +43,7 @@ class GreedyCat(Bot):
                 max_idx = 0
                 max_moves = None
                 for idx, move in enumerate(move_list):
-                    search_board = copy.deepcopy(board)
+                    search_board = board.__copy__()
                     search_board.move_piece(move)
                     moves, evaluation = self.minimax(
                         search_board, depth - 1, alpha, beta, Colour.BLACK
@@ -65,7 +63,7 @@ class GreedyCat(Bot):
                 min_idx = 0
                 min_moves = None
                 for idx, move in enumerate(move_list):
-                    search_board = copy.deepcopy(board)
+                    search_board = board.__copy__()
                     search_board.move_piece(move)
                     moves, evaluation = self.minimax(
                         search_board, depth - 1, alpha, beta, Colour.WHITE

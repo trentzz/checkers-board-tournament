@@ -1,6 +1,5 @@
 import pytest
 
-from checkers_bot_tournament.board import Board
 from checkers_bot_tournament.board_start_builder import DefaultBSB
 from checkers_bot_tournament.bots.bot_tracker import BotTracker
 from checkers_bot_tournament.bots.random_bot import RandomBot
@@ -30,7 +29,7 @@ def test_import_pdn_from_string(temp_pdn_file, sample_pdn) -> None:
     game = Game(
         BotTracker(RandomBot, 0, []),
         BotTracker(RandomBot, 0, []),
-        Board(DefaultBSB()),
+        DefaultBSB(),
         0,
         0,
         False,
@@ -63,7 +62,7 @@ def test_import_pdn_black_move_first() -> None:
     game = Game(
         BotTracker(RandomBot, 0, []),
         BotTracker(RandomBot, 0, []),
-        Board(DefaultBSB()),
+        DefaultBSB(),
         0,
         0,
         False,
@@ -87,7 +86,7 @@ def test_import_invalid_pdn() -> None:
         Game(
             BotTracker(RandomBot, 0, []),
             BotTracker(RandomBot, 0, []),
-            Board(DefaultBSB()),
+            DefaultBSB(),
             0,
             0,
             False,
@@ -100,7 +99,7 @@ def test_import_complete_game_pdn() -> None:
         Game(
             BotTracker(RandomBot, 0, []),
             BotTracker(RandomBot, 0, []),
-            Board(DefaultBSB()),
+            DefaultBSB(),
             0,
             0,
             False,
@@ -114,7 +113,7 @@ def test_export_pdn(temp_pdn_file) -> None:
     game = Game(
         BotTracker(RandomBot, 0, []),
         BotTracker(RandomBot, 0, []),
-        Board(DefaultBSB()),
+        DefaultBSB(),
         0,
         0,
         False,
@@ -155,7 +154,7 @@ def test_import_export_consistency(temp_pdn_file, sample_pdn) -> None:
     game = Game(
         BotTracker(RandomBot, 0, []),
         BotTracker(RandomBot, 0, []),
-        Board(DefaultBSB()),
+        DefaultBSB(),
         0,
         0,
         False,

@@ -1,7 +1,7 @@
 import copy
 from typing import Optional, Tuple, overload
 
-from checkers_bot_tournament.board import Board
+from checkers_bot_tournament.board_start_builder import BoardStartBuilder
 from checkers_bot_tournament.bots.base_bot import Bot
 from checkers_bot_tournament.bots.bot_tracker import BotTracker
 from checkers_bot_tournament.checkers_util import make_unique_bot_string
@@ -18,7 +18,7 @@ class Game:
         self,
         white_tracker: BotTracker,
         black_tracker: BotTracker,
-        board: Board,
+        board_builder: BoardStartBuilder,
         game_id: int,
         game_round: int,
         verbose: bool,
@@ -29,7 +29,7 @@ class Game:
         self.white_bot: Bot | None = None
         self.black_bot: Bot | None = None
 
-        self.board = board
+        self.board = board_builder.build()
         self.game_id = game_id
         self.game_round = game_round
         self.verbose = verbose
@@ -221,7 +221,7 @@ class Game:
         #     except TimeoutError:
         #         !!!
         info = PlayMoveInfo(
-            board=copy.deepcopy(self.board),
+            board=self.board.__copy__(),
             colour=self.current_turn,
             move_list=copy.copy(move_list),
             move_history=copy.copy(self.move_history),

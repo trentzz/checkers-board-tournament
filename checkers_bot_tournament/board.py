@@ -1,6 +1,5 @@
 from typing import Optional, Tuple
 
-from checkers_bot_tournament.board_start_builder import BoardStartBuilder
 from checkers_bot_tournament.move import Move
 from checkers_bot_tournament.piece import Colour, Piece
 
@@ -8,12 +7,24 @@ Grid = list[list[Optional[Piece]]]
 
 
 class Board:
-    def __init__(self, board_start_builder: BoardStartBuilder, size: int = 8):
-        self.size = size  # Note that size must always be even
-        if size % 2 != 0:
-            raise ValueError("Even board sizes only.")
+    def __init__(self, grid: Grid, size: int):
+        self.grid = grid
+        self.size = size
 
-        self.grid: Grid = board_start_builder.build()
+        if self.size % 2 != 0:
+            raise ValueError("Even board sizes only.")
+        elif self.size != len(self.grid[0]):
+            raise ValueError("Board needs to be a square.")
+
+    def __copy__(self) -> "Board":
+        new_grid: Grid = [[None for _ in range(self.size)] for _ in range(self.size)]
+        for i in range(self.size):
+            for j in range(self.size):
+                piece = self.grid[i][j]
+                if piece is not None:
+                    new_grid[i][j] = piece.__copy__()
+
+        return Board(new_grid, self.size)
 
     def move_piece(self, move: Move) -> Tuple[int, bool]:
         """
@@ -63,9 +74,9 @@ class Board:
         original_col: int,
         directions: list[tuple[int, int]],
     ) -> None:
-        def do_DFS(prev_captured_pieces: list[Piece], curr_row: int, curr_col: int) -> None:
+        def do_DFS(prev_captured_sqs: list[tuple[int, int]], curr_row: int, curr_col: int) -> None:
             any_capturable = False
-            for i, (dr, dc) in enumerate(directions):
+            for dr, dc in directions:
                 dest_row, dest_col = curr_row + 2 * dr, curr_col + 2 * dc
                 if not self.is_within_bounds(dest_row, dest_col):
                     continue
@@ -77,16 +88,16 @@ class Board:
                 capturable = (
                     piece.colour is not colour
                     and self.grid[dest_row][dest_col] is None
-                    and piece not in prev_captured_pieces
+                    and piece.position not in prev_captured_sqs
                 )
 
                 if capturable:
-                    prev_captured_pieces.append(piece)
+                    prev_captured_sqs.append(piece.position)
                     any_capturable = True
-                    do_DFS(prev_captured_pieces, dest_row, dest_col)
-                    prev_captured_pieces.pop()
+                    do_DFS(prev_captured_sqs, dest_row, dest_col)
+                    prev_captured_sqs.pop()
 
-            if not any_capturable and prev_captured_pieces:
+            if prev_captured_sqs and not any_capturable:
                 # No further captures available from this sq, so this is a
                 # leaf node: Make Move obj starting from original row/col
                 # and ending here, with all the captures of our ancestors
@@ -95,7 +106,7 @@ class Board:
                     Move(
                         (original_row, original_col),
                         (curr_row, curr_col),
-                        list(map(lambda x: x.position, prev_captured_pieces)),
+                        prev_captured_sqs.copy(),
                     )
                 )
 

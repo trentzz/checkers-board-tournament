@@ -1,5 +1,3 @@
-import copy
-
 from checkers_bot_tournament.bots.base_bot import Bot
 from checkers_bot_tournament.piece import Colour
 from checkers_bot_tournament.play_move_info import PlayMoveInfo
@@ -19,7 +17,7 @@ class ScaredyCat(Bot):
 
         scores1: list[tuple[int, int]] = []
         for i1, move1 in enumerate(move_list):
-            searchboard = copy.deepcopy(board)
+            searchboard = board.__copy__()
             searchboard.move_piece(move1)  # Our candidate move, now opp's turn
             move_list_2 = searchboard.get_move_list(opp_colour)
 

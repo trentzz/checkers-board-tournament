@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 
+from checkers_bot_tournament.board import Board
 from checkers_bot_tournament.piece import Colour, Piece
 
 Grid = list[list[Optional[Piece]]]
@@ -11,12 +12,12 @@ class BoardStartBuilder(ABC):
         self.size = size
 
     @abstractmethod
-    def build(self) -> Grid:
+    def build(self) -> Board:
         raise RuntimeError("build not implemented yet!")
 
 
 class DefaultBSB(BoardStartBuilder):
-    def build(self) -> Grid:
+    def build(self) -> Board:
         grid: Grid = [[None for _ in range(self.size)] for _ in range(self.size)]
 
         half = int(self.size / 2)
@@ -32,11 +33,11 @@ class DefaultBSB(BoardStartBuilder):
                 if (row + col) % 2 == 1:
                     grid[row][col] = Piece((row, col), Colour.WHITE)
 
-        return grid
+        return Board(grid, self.size)
 
 
 class LastRowBSB(BoardStartBuilder):
-    def build(self) -> Grid:
+    def build(self) -> Board:
         grid: Grid = [[None for _ in range(self.size)] for _ in range(self.size)]
 
         # Init black pieces
@@ -49,15 +50,15 @@ class LastRowBSB(BoardStartBuilder):
             if (self.size - 1 + col) % 2 == 1:
                 grid[self.size - 1][col] = Piece((self.size - 1, col), Colour.WHITE)
 
-        return grid
+        return Board(grid, self.size)
 
 
 class FromPiecesBSB(BoardStartBuilder):
     def __init__(self, pieces: list[Piece], size: int = 8) -> None:
-        self.pieces = pieces
         super().__init__(size)
+        self.pieces = pieces
 
-    def build(self) -> Grid:
+    def build(self) -> Board:
         grid: Grid = [[None for _ in range(self.size)] for _ in range(self.size)]
 
         for piece in self.pieces:
@@ -66,4 +67,4 @@ class FromPiecesBSB(BoardStartBuilder):
                 raise ValueError(f"There are multiple given pieces at {row=} {col=}")
             grid[row][col] = piece
 
-        return grid
+        return Board(grid, self.size)

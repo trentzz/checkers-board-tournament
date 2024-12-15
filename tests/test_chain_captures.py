@@ -1,6 +1,3 @@
-import copy
-
-from checkers_bot_tournament.board import Board
 from checkers_bot_tournament.board_start_builder import FromPiecesBSB
 from checkers_bot_tournament.move import Move
 from checkers_bot_tournament.piece import Colour, Piece
@@ -29,7 +26,7 @@ def test_simple_capture() -> None:
     builder = FromPiecesBSB(piece_list)
 
     # Create a board and populate with pieces
-    board = Board(builder)
+    board = builder.build()
 
     moves = board.get_move_list(Colour.BLACK)
     assert len(moves) == 1
@@ -68,7 +65,7 @@ def test_simple_capture2() -> None:
     builder = FromPiecesBSB(piece_list)
 
     # Create a board and populate with pieces
-    board = Board(builder)
+    board = builder.build()
 
     moves = board.get_move_list(Colour.BLACK)
     # capturing leftward would be OOB
@@ -111,7 +108,7 @@ def test_multiple_pieces_capturing() -> None:
     builder = FromPiecesBSB(piece_list)
 
     # Create a board and populate with pieces
-    board = Board(builder)
+    board = builder.build()
 
     moves = board.get_move_list(Colour.BLACK)
 
@@ -149,7 +146,7 @@ def test_chain_captures() -> None:
     builder = FromPiecesBSB(piece_list)
 
     # Create a board and populate with pieces
-    board = Board(builder)
+    board = builder.build()
 
     moves = board.get_move_list(Colour.BLACK)
     assert len(moves) == 1
@@ -207,7 +204,7 @@ def test_chain_captures_multiple_routes() -> None:
 
     # Build the board
     builder = FromPiecesBSB(piece_list)
-    board = Board(builder)
+    board = builder.build()
 
     # Retrieve all possible moves for BLACK
     moves = board.get_move_list(Colour.BLACK)
@@ -279,7 +276,7 @@ def test_diamond_chain_capture() -> None:
 
     # Build the board
     builder = FromPiecesBSB(piece_list)
-    board = Board(builder)
+    board = builder.build()
 
     # Retrieve all possible moves for BLACK
     moves = board.get_move_list(Colour.BLACK)
@@ -297,7 +294,7 @@ def test_diamond_chain_capture() -> None:
 
     # Execute both moves and verify the board state
     for move in moves:
-        board_after_move = copy.deepcopy(board)
+        board_after_move = board.__copy__()
         board_after_move.move_piece(move)
 
         # Verify the original black piece has moved

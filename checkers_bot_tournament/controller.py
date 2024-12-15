@@ -7,7 +7,6 @@ from queue import Queue
 from threading import Thread
 from typing import IO, Dict, Optional, Type, TypeAlias
 
-from checkers_bot_tournament.board import Board
 from checkers_bot_tournament.board_start_builder import (
     BoardStartBuilder,
     DefaultBSB,
@@ -182,7 +181,7 @@ class Controller:
         new_game1 = Game(
             bot1,
             bot2,
-            Board(self.board_start_builder),
+            self.board_start_builder,
             self._get_new_game_id(),
             rnd,
             self.verbose,
@@ -191,7 +190,7 @@ class Controller:
         new_game2 = Game(
             bot2,
             bot1,
-            Board(self.board_start_builder),
+            self.board_start_builder,
             self._get_new_game_id(),
             rnd,
             self.verbose,
@@ -239,7 +238,7 @@ class Controller:
 
             # Add task of recording all games in the round to writer thread
             self.write_queue.put((self.game_results[rnd], rnd))
-            # self._write_game_results(self.game_results[rnd])
+            # self._write_game_results(self.game_results[rnd], rnd)
 
             # Calculate Elo at the end of all matches in a round
             for game, game_result in zip(self.games[rnd], self.game_results[rnd]):

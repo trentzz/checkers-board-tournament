@@ -26,8 +26,8 @@ class Game:
     ):
         self.white_tracker = white_tracker
         self.black_tracker = black_tracker
-        self.white_bot: Bot | None = None
-        self.black_bot: Bot | None = None
+        self.white_bot: Optional[Bot] = None
+        self.black_bot: Optional[Bot] = None
 
         self.board = board_builder.build()
         self.game_id = game_id

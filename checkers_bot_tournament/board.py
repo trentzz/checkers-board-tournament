@@ -15,7 +15,7 @@ class Board:
 
         self.grid: Grid = board_start_builder.build()
 
-    def move_piece(self, move: Move) -> Tuple[bool, bool]:
+    def move_piece(self, move: Move) -> Tuple[int, bool]:
         """
         Assume move is valid
         (i.e. in bounds, piece exists, vacant destination for normal move, or valid capturing move)
@@ -32,11 +32,11 @@ class Board:
         self.grid[end_row][end_col] = piece
         piece.position = move.end
 
-        capture = False
+        captures = 0
         promotion = False
 
         if move.removed:
-            capture = True
+            captures = len(move.removed)
             for rem_row, rem_col in move.removed:
                 self.grid[rem_row][rem_col] = None
 
@@ -48,7 +48,7 @@ class Board:
             piece.is_king = True
             promotion = True
 
-        return (capture, promotion)
+        return (captures, promotion)
 
     def add_regular_move(self, moves: list[Move], row: int, col: int, dr: int, dc: int):
         end_row, end_col = row + dr, col + dc

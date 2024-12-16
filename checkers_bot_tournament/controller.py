@@ -20,7 +20,6 @@ from checkers_bot_tournament.bots.bot_tracker import BotTracker
 from checkers_bot_tournament.bots.copycat import CopyCat
 from checkers_bot_tournament.bots.first_mover import FirstMover
 from checkers_bot_tournament.bots.greedycat import GreedyCat
-from checkers_bot_tournament.bots.hunter import Hunter
 from checkers_bot_tournament.bots.malicious_bot import MaliciousBot
 from checkers_bot_tournament.bots.random_bot import RandomBot
 from checkers_bot_tournament.bots.scaredycat import ScaredyCat
@@ -53,7 +52,6 @@ class Controller:
         "GreedyCat": GreedyCat,
         "CopyCat": CopyCat,
         "MaliciousBot": MaliciousBot,
-        "Hunter": Hunter,
     }
 
     board_start_builder_mapping: Dict[str, Type[BoardStartBuilder]] = {

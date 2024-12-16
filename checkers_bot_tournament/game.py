@@ -1,4 +1,5 @@
 import copy
+from collections import defaultdict
 from typing import Optional, Tuple, overload
 
 from checkers_bot_tournament.board import Board
@@ -10,7 +11,7 @@ from checkers_bot_tournament.move import Move
 from checkers_bot_tournament.piece import Colour
 from checkers_bot_tournament.play_move_info import PlayMoveInfo
 
-AUTO_DRAW_MOVECOUNT = 50 * 2
+AUTO_DRAW_MOVECOUNT = 40 * 2
 
 
 class Game:
@@ -38,8 +39,8 @@ class Game:
         self.current_turn = Colour.WHITE
         self.is_first_move = True
 
-        # There must be a capture or promotion within last 50 moves
-        # of both players, or 100 by our count.
+        # There must be a capture or promotion within last 40 moves
+        # of both players, or 80 by our count.
         self.last_action_move = 0
 
         self.white_kings_made = 0
@@ -50,6 +51,7 @@ class Game:
         self.game_result: Optional[GameResult] = None
         self.moves_string: str = ""  # if verbose else None
         self.move_history: list[Move] = []
+        self.board_hashes: dict[Board, list[int]] = defaultdict(list)
 
         if self.pdn:
             self.import_pdn(self.pdn)
@@ -60,6 +62,8 @@ class Game:
         Querying move_number happens after a move is made, so move_number
         represents the move number of the last recorded move in move_history
         and NOT the move number of the next move.
+
+        To clarify, this means the first move should have move_number 1.
         """
         return len(self.move_history)
 
@@ -71,6 +75,10 @@ class Game:
             pdn_content = file.read().strip()
 
         moves = pdn_content.split()  # Assumes moves are space-separated
+
+        # Record the starting board state
+        position_occurences = self.board_hashes[self.board]
+        position_occurences.append(self.move_number)
 
         for idx, move in enumerate(moves):
             if "-" in move:  # Regular move
@@ -105,20 +113,22 @@ class Game:
                         f"Invalid move in import_pdn for colour: {str(self.current_turn)}, turn: {self.move_number + 1}, move: {move}"
                     )
 
-            self.move_piece(move_obj, True)
+            result, _ = self.execute_move(move_obj, True)
+            # Don't accept pdns where the game has already finished
+            if result:
+                raise RuntimeError(
+                    f"PDN game: {self.pdn} is already complete on move {self.move_number} with result: {result.name}. There's nothing for bots to do!"
+                )
             self.swap_turn()
 
-        # Check that the game has NOT ended at this point
-        if not self.board.get_move_list(self.current_turn):
-            raise RuntimeError(f"PDN game: {self.pdn} is already complete! Nothing for bots to do!")
-
-    def move_piece(self, move: Move, from_import: bool = False) -> None:
-        """
-        Only used by import_pdn and for testing purposes.
-        """
+    def execute_move(
+        self, move: Move, from_import: bool = False
+    ) -> tuple[Optional[Result], list[Move]]:
         # Update move history
         self.move_history.append(move)
         capture, promotion = self.board.move_piece(move)
+        position_occurences = self.board_hashes[self.board]
+        position_occurences.append(self.move_number)
 
         if capture or promotion:
             # Reset action move, since capture or promotion occured
@@ -134,6 +144,33 @@ class Game:
             if from_import:
                 self.moves_string += " (Book Move)"
             self.moves_string += "\n" + self.board.display() + "\n"
+
+        if len(position_occurences) >= 3:
+            # threefold repetition
+            result = Result.DRAW
+            if self.verbose:
+                self.moves_string += (
+                    f"Draw by repetition! Position occured on moves {position_occurences}.\n"
+                )
+            return result, []
+
+        if self.move_number - self.last_action_move >= AUTO_DRAW_MOVECOUNT:
+            result = Result.DRAW
+            if self.verbose:
+                self.moves_string += f"Automatic draw by {AUTO_DRAW_MOVECOUNT/2}-move rule!\n"
+            return result, []
+
+        next_to_move = self.current_turn.get_opposite()
+        move_list: list[Move] = self.board.get_move_list(next_to_move)
+        if len(move_list) == 0:
+            result = Result.BLACK if next_to_move == Colour.WHITE else Result.WHITE
+            if self.verbose:
+                self.moves_string += (
+                    f"{result.name} wins! {next_to_move.value} cannot make any moves.\n"
+                )
+            return result, []
+
+        return None, move_list
 
     @overload
     def export_pdn(self, filename: str) -> None: ...
@@ -192,18 +229,9 @@ class Game:
         removed_col = (start_col + end_col) // 2
         return removed_row, removed_col
 
-    def make_move(self) -> Optional[Result]:
+    def query_move(self, move_list: list[Move]) -> tuple[Optional[Result], list[Move]]:
         bot = self.white_bot if self.current_turn == Colour.WHITE else self.black_bot
         assert bot
-
-        move_list: list[Move] = self.board.get_move_list(self.current_turn)
-
-        if len(move_list) == 0:
-            result = Result.BLACK if self.current_turn == Colour.WHITE else Result.WHITE
-            # TODO: You can add extra information here (and pass it into write_game_result)
-            # and GameResult as needed
-            # self.write_game_result(result)
-            return result
 
         # TODO: Add a futures thingo to limit each bot to 10 seconds per move or smth
         # from concurrent.futures import ThreadPoolExecutor
@@ -217,8 +245,8 @@ class Game:
             PlayMoveInfo(
                 board=copy.deepcopy(self.board),
                 colour=self.current_turn,
-                move_list=copy.copy(move_list),
-                move_history=copy.copy(self.move_history),
+                move_list=move_list.copy(),
+                move_history=self.move_history.copy(),
                 last_action_move=self.last_action_move,
             )
         )
@@ -228,20 +256,8 @@ class Game:
             raise RuntimeError(f"bot: {bot_string} has played an invalid move")
 
         move: Move = move_list[move_idx]
-
-        self.move_piece(move)
-
-        if self.move_number - self.last_action_move >= AUTO_DRAW_MOVECOUNT:
-            result = Result.DRAW
-            # TODO: You can add extra information here (and pass it into write_game_result)
-            # and GameResult as needed
-
-            if self.verbose:
-                self.moves_string += f"Automatic draw by {AUTO_DRAW_MOVECOUNT/2}-move rule!\n"
-            # self.write_game_result(result)
-            return result
-
-        return None
+        result, next_move_list = self.execute_move(move)
+        return result, next_move_list
 
     def _record_capture(self) -> None:
         if self.current_turn == Colour.WHITE:
@@ -259,9 +275,17 @@ class Game:
         self.white_bot = self.white_tracker.spawn_bot()
         self.black_bot = self.black_tracker.spawn_bot()
 
+        next_move_list = self.board.get_move_list(self.current_turn)
+        if len(next_move_list) == 0:
+            raise RuntimeError("Game is already complete at the start! Nothing for bots to do!")
+
+        if self.move_number == 0:
+            position_occurences = self.board_hashes[self.board]
+            position_occurences.append(self.move_number)
+
         while True:
             # TODO: Implement chain moves (use is_first_move)
-            result = self.make_move()
+            result, next_move_list = self.query_move(next_move_list)
             if result:
                 break
             else:

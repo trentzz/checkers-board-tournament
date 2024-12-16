@@ -134,7 +134,7 @@ def test_export_pdn(temp_pdn_file):
     ]
 
     for move in moves:
-        game.move_piece(move)
+        game.execute_move(move)
 
     # Export the moves to a file
     game.export_pdn(temp_pdn_file)

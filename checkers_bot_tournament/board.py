@@ -63,9 +63,9 @@ class Board:
         original_col: int,
         directions: list[tuple[int, int]],
     ) -> None:
-        def do_DFS(prev_captured_pieces: list[Piece], curr_row: int, curr_col: int) -> None:
+        def do_DFS(prev_captured_sqs: list[tuple[int, int]], curr_row: int, curr_col: int) -> None:
             any_capturable = False
-            for i, (dr, dc) in enumerate(directions):
+            for dr, dc in directions:
                 dest_row, dest_col = curr_row + 2 * dr, curr_col + 2 * dc
                 if not self.is_within_bounds(dest_row, dest_col):
                     continue
@@ -77,25 +77,25 @@ class Board:
                 capturable = (
                     piece.colour is not colour
                     and self.grid[dest_row][dest_col] is None
-                    and piece not in prev_captured_pieces
+                    and piece.position not in prev_captured_sqs
                 )
 
                 if capturable:
-                    prev_captured_pieces.append(piece)
+                    prev_captured_sqs.append(piece.position)
                     any_capturable = True
-                    do_DFS(prev_captured_pieces, dest_row, dest_col)
-                    prev_captured_pieces.pop()
+                    do_DFS(prev_captured_sqs, dest_row, dest_col)
+                    prev_captured_sqs.pop()
 
-            if not any_capturable and prev_captured_pieces:
+            if prev_captured_sqs and not any_capturable:
                 # No further captures available from this sq, so this is a
                 # leaf node: Make Move obj starting from original row/col
-                # and ending here, with all the captures of our ancestors
-                # Since x.position is a tuple, this is deep copied
+                # and ending here, with all the captures of our ancestors.
+                # Since it is a list of tuples, this is a deep copy.
                 moves.append(
                     Move(
                         (original_row, original_col),
                         (curr_row, curr_col),
-                        list(map(lambda x: x.position, prev_captured_pieces)),
+                        prev_captured_sqs.copy(),
                     )
                 )
 

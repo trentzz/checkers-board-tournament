@@ -77,7 +77,7 @@ class Game:
         moves = pdn_content.split()  # Assumes moves are space-separated
 
         # Record the starting board state
-        position_occurences = self.board_hashes[self.board]
+        position_occurences = self.board_hashes[self.board.__hash__()]
         position_occurences.append(self.move_number)
 
         for idx, move in enumerate(moves):
@@ -127,7 +127,7 @@ class Game:
         # Update move history
         self.move_history.append(move)
         capture, promotion = self.board.move_piece(move)
-        position_occurences = self.board_hashes[self.board]
+        position_occurences = self.board_hashes[self.board.__hash__()]
         position_occurences.append(self.move_number)
 
         if capture or promotion:
@@ -280,7 +280,7 @@ class Game:
             raise RuntimeError("Game is already complete at the start! Nothing for bots to do!")
 
         if self.move_number == 0:
-            position_occurences = self.board_hashes[self.board]
+            position_occurences = self.board_hashes[self.board.__hash__()]
             position_occurences.append(self.move_number)
 
         while True:

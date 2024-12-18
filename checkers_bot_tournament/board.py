@@ -63,7 +63,7 @@ class Board:
         original_col: int,
         directions: list[tuple[int, int]],
     ) -> None:
-        def do_DFS(prev_captured_sqs: list[tuple[int, int]], curr_row: int, curr_col: int) -> None:
+        def do_dfs(prev_captured_sqs: list[tuple[int, int]], curr_row: int, curr_col: int) -> None:
             any_capturable = False
             for dr, dc in directions:
                 dest_row, dest_col = curr_row + 2 * dr, curr_col + 2 * dc
@@ -83,7 +83,7 @@ class Board:
                 if capturable:
                     prev_captured_sqs.append(piece.position)
                     any_capturable = True
-                    do_DFS(prev_captured_sqs, dest_row, dest_col)
+                    do_dfs(prev_captured_sqs, dest_row, dest_col)
                     prev_captured_sqs.pop()
 
             if prev_captured_sqs and not any_capturable:
@@ -99,7 +99,7 @@ class Board:
                     )
                 )
 
-        do_DFS([], original_row, original_col)
+        do_dfs([], original_row, original_col)
 
     def is_valid_move(self, colour: Colour, move: Move) -> bool:
         return move in self.get_move_list(colour)

@@ -267,7 +267,6 @@ class Game:
         self.black_bot = self.black_tracker.spawn_bot()
 
         while True:
-            # TODO: Implement chain moves (use is_first_move)
             result = self.make_move()
             if result:
                 break
@@ -291,7 +290,7 @@ class Game:
             black_num_captures=self.black_num_captures,
             num_moves=self.move_number,
             moves=self.moves_string,
-            moves_pdn="",
+            moves_pdn="",  # TODO: fix pdns for chain captures
         )
         return self.game_result
 

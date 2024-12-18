@@ -10,7 +10,7 @@ from checkers_bot_tournament.move import Move
 from checkers_bot_tournament.piece import Colour
 from checkers_bot_tournament.play_move_info import PlayMoveInfo
 
-AUTO_DRAW_MOVECOUNT = 50 * 2
+AUTO_DRAW_MOVECOUNT = 40 * 2
 
 
 class Game:
@@ -71,6 +71,8 @@ class Game:
             pdn_content = file.read().strip()
 
         moves = pdn_content.split()  # Assumes moves are space-separated
+        # NOTE: currently don't support moves with multiple x's
+        # (whether necessary for disambiguation of chain captures or not)
 
         for idx, move in enumerate(moves):
             if "-" in move:  # Regular move
@@ -82,7 +84,7 @@ class Game:
 
             start_pos = self._pdn_to_coordinates(start)
             end_pos = self._pdn_to_coordinates(end)
-            removed_pos = self._get_removed_position(start_pos, end_pos) if "x" in move else None
+            removed_pos = [self._get_removed_position(start_pos, end_pos)] if "x" in move else []
 
             move_obj = Move(start_pos, end_pos, removed_pos)
 
@@ -112,24 +114,29 @@ class Game:
         if not self.board.get_move_list(self.current_turn):
             raise RuntimeError(f"PDN game: {self.pdn} is already complete! Nothing for bots to do!")
 
-    def move_piece(self, move: Move, from_import: bool = False) -> None:
+    def move_piece(
+        self, move: Move, from_import: bool = False, play_move_info: Optional[PlayMoveInfo] = None
+    ) -> None:
         """
         Only used by import_pdn and for testing purposes.
         """
         # Update move history
         self.move_history.append(move)
-        capture, promotion = self.board.move_piece(move)
+        captures, promotion = self.board.move_piece(move)
 
-        if capture or promotion:
+        if captures or promotion:
             # Reset action move, since capture or promotion occured
             self.last_action_move = self.move_number
-            if capture:
-                self._record_capture()
+            if captures:
+                self._record_capture(captures)
             if promotion:
                 self._record_promotion()
 
         if self.verbose:
-            self.moves_string += f"Move {self.move_number}: {self.current_turn}'s turn\n"
+            eval_str = ""
+            if play_move_info and play_move_info.pos_eval is not None:
+                eval_str = f". Bot's eval: {play_move_info.pos_eval:.2f}"
+            self.moves_string += f"Move {self.move_number}: {self.current_turn}'s turn{eval_str}\n"
             self.moves_string += f"Moved from {str(move.start)} to {str(move.end)}"
             if from_import:
                 self.moves_string += " (Book Move)"
@@ -213,15 +220,15 @@ class Game:
         #         return future.result(timeout=10)
         #     except TimeoutError:
         #         !!!
-        move_idx = bot.play_move(
-            PlayMoveInfo(
-                board=copy.deepcopy(self.board),
-                colour=self.current_turn,
-                move_list=copy.copy(move_list),
-                move_history=copy.copy(self.move_history),
-                last_action_move=self.last_action_move,
-            )
+        info = PlayMoveInfo(
+            board=copy.deepcopy(self.board),
+            colour=self.current_turn,
+            move_list=copy.copy(move_list),
+            move_history=copy.copy(self.move_history),
+            last_action_move=self.last_action_move,
+            pos_eval=None,
         )
+        move_idx = bot.play_move(info)
 
         if move_idx < 0 or move_idx >= len(move_list):
             bot_string = make_unique_bot_string(bot.bot_id, bot._get_name())
@@ -229,7 +236,7 @@ class Game:
 
         move: Move = move_list[move_idx]
 
-        self.move_piece(move)
+        self.move_piece(move, play_move_info=info)
 
         if self.move_number - self.last_action_move >= AUTO_DRAW_MOVECOUNT:
             result = Result.DRAW
@@ -243,11 +250,11 @@ class Game:
 
         return None
 
-    def _record_capture(self) -> None:
+    def _record_capture(self, captures: int) -> None:
         if self.current_turn == Colour.WHITE:
-            self.white_num_captures += 1
+            self.white_num_captures += captures
         else:
-            self.black_num_captures += 1
+            self.black_num_captures += captures
 
     def _record_promotion(self) -> None:
         if self.current_turn == Colour.WHITE:
@@ -260,7 +267,6 @@ class Game:
         self.black_bot = self.black_tracker.spawn_bot()
 
         while True:
-            # TODO: Implement chain moves (use is_first_move)
             result = self.make_move()
             if result:
                 break
@@ -284,7 +290,7 @@ class Game:
             black_num_captures=self.black_num_captures,
             num_moves=self.move_number,
             moves=self.moves_string,
-            moves_pdn=self.export_pdn(),
+            moves_pdn="",  # TODO: fix pdns for chain captures
         )
         return self.game_result
 

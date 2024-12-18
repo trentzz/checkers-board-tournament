@@ -20,7 +20,7 @@ class MaliciousBot(Bot):
         return "MaliciousBot"
 
 
-def test_malicious_bot_tampering():
+def test_malicious_bot_tampering() -> None:
     builder = DefaultBSB()
 
     # Create a board and populate with pieces
@@ -30,11 +30,19 @@ def test_malicious_bot_tampering():
     )
 
     game2 = Game(
-        BotTracker(MaliciousBot, 0, []), FirstMover(MaliciousBot, 1, []), board, 0, 0, True, None
+        BotTracker(MaliciousBot, 1, []), BotTracker(FirstMover, 0, []), board, 0, 0, True, None
     )
 
-    with pytest.raises(IllegalMoveException):
-        game.run()
+    game.white_bot = game.white_tracker.spawn_bot()
+    game.black_bot = game.black_tracker.spawn_bot()
 
+    # First Mover should make a legal move
+    game.query_move()
+    game.swap_turn()
     with pytest.raises(IllegalMoveException):
-        game2.run()
+        game.query_move()
+
+    game2.white_bot = game2.white_tracker.spawn_bot()
+    game2.black_bot = game2.black_tracker.spawn_bot()
+    with pytest.raises(IllegalMoveException):
+        game2.query_move()

@@ -7,7 +7,7 @@ from checkers_bot_tournament.bots.base_bot import Bot
 from checkers_bot_tournament.bots.bot_tracker import BotTracker
 from checkers_bot_tournament.checkers_util import make_unique_bot_string
 from checkers_bot_tournament.game_result import GameResult, Result
-from checkers_bot_tournament.move import Move
+from checkers_bot_tournament.move import IllegalMoveException, Move
 from checkers_bot_tournament.piece import Colour
 from checkers_bot_tournament.play_move_info import PlayMoveInfo
 
@@ -104,16 +104,16 @@ class Game:
                 elif self.board.is_valid_move(Colour.BLACK, move_obj):
                     self.current_turn = Colour.BLACK
                 else:
-                    raise RuntimeError(
+                    raise IllegalMoveException(
                         f"First move in import_pdn is invalid for both white and black: {move}"
                     )
             else:
                 if not self.board.is_valid_move(self.current_turn, move_obj):
-                    raise RuntimeError(
+                    raise IllegalMoveException(
                         f"Invalid move in import_pdn for colour: {str(self.current_turn)}, turn: {self.move_number + 1}, move: {move}"
                     )
 
-            result, _ = self.execute_move(move_obj, True)
+            result = self.execute_move(move_obj, True)
             # Don't accept pdns where the game has already finished
             if result:
                 raise RuntimeError(
@@ -121,9 +121,7 @@ class Game:
                 )
             self.swap_turn()
 
-    def execute_move(
-        self, move: Move, from_import: bool = False
-    ) -> tuple[Optional[Result], list[Move]]:
+    def execute_move(self, move: Move, from_import: bool = False) -> Optional[Result]:
         # Update move history
         self.move_history.append(move)
         capture, promotion = self.board.move_piece(move)
@@ -147,30 +145,28 @@ class Game:
 
         if len(position_occurences) >= 3:
             # threefold repetition
-            result = Result.DRAW
             if self.verbose:
                 self.moves_string += (
                     f"Draw by repetition! Position occured on moves {position_occurences}.\n"
                 )
-            return result, []
+            return Result.DRAW
 
         if self.move_number - self.last_action_move >= AUTO_DRAW_MOVECOUNT:
-            result = Result.DRAW
             if self.verbose:
                 self.moves_string += f"Automatic draw by {AUTO_DRAW_MOVECOUNT/2}-move rule!\n"
-            return result, []
+            return Result.DRAW
 
         next_to_move = self.current_turn.get_opposite()
         move_list: list[Move] = self.board.get_move_list(next_to_move)
         if len(move_list) == 0:
-            result = Result.BLACK if next_to_move == Colour.WHITE else Result.WHITE
+            result = next_to_move.get_opposite().as_result()
             if self.verbose:
                 self.moves_string += (
                     f"{result.name} wins! {next_to_move.value} cannot make any moves.\n"
                 )
-            return result, []
+            return result
 
-        return None, move_list
+        return None
 
     @overload
     def export_pdn(self, filename: str) -> None: ...
@@ -229,10 +225,11 @@ class Game:
         removed_col = (start_col + end_col) // 2
         return removed_row, removed_col
 
-    def query_move(self, move_list: list[Move]) -> tuple[Optional[Result], list[Move]]:
+    def query_move(self) -> Optional[Result]:
         bot = self.white_bot if self.current_turn == Colour.WHITE else self.black_bot
         assert bot
 
+        move_list = self.board.get_move_list(self.current_turn)
         # TODO: Add a futures thingo to limit each bot to 10 seconds per move or smth
         # from concurrent.futures import ThreadPoolExecutor
         # with ThreadPoolExecutor() as executor:
@@ -241,7 +238,7 @@ class Game:
         #         return future.result(timeout=10)
         #     except TimeoutError:
         #         !!!
-        move_idx = bot.play_move(
+        chosen_move = bot.play_move(
             PlayMoveInfo(
                 board=copy.deepcopy(self.board),
                 colour=self.current_turn,
@@ -251,13 +248,14 @@ class Game:
             )
         )
 
-        if move_idx < 0 or move_idx >= len(move_list):
-            bot_string = make_unique_bot_string(bot.bot_id, bot._get_name())
-            raise RuntimeError(f"bot: {bot_string} has played an invalid move")
+        if chosen_move not in move_list:
+            # Offending player loses by forfeit
+            raise IllegalMoveException(
+                f"bot: {make_unique_bot_string(bot)} made an illegal move {chosen_move}! Automatic forfeit."
+            )
 
-        move: Move = move_list[move_idx]
-        result, next_move_list = self.execute_move(move)
-        return result, next_move_list
+        result = self.execute_move(chosen_move)
+        return result
 
     def _record_capture(self) -> None:
         if self.current_turn == Colour.WHITE:
@@ -277,15 +275,20 @@ class Game:
 
         next_move_list = self.board.get_move_list(self.current_turn)
         if len(next_move_list) == 0:
-            raise RuntimeError("Game is already complete at the start! Nothing for bots to do!")
+            raise RuntimeError(
+                f"Game is already complete (no valid moves for player {self.current_turn.name})!"
+            )
 
         if self.move_number == 0:
             position_occurences = self.board_hashes[self.board.__hash__()]
             position_occurences.append(self.move_number)
 
         while True:
-            # TODO: Implement chain moves (use is_first_move)
-            result, next_move_list = self.query_move(next_move_list)
+            try:
+                result = self.query_move()
+            except IllegalMoveException as e:
+                print(e.args)
+                result = self.current_turn.get_opposite().as_result()
             if result:
                 break
             else:

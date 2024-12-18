@@ -21,7 +21,7 @@ def execute_move(
         f"Available moves: {available_moves}"
     )
 
-    result, _ = game.execute_move(move)
+    result = game.execute_move(move)
     assert (result == Result.DRAW) == expect_draw
 
     colour_to_move_ptr[0] = colour_to_move.get_opposite()
